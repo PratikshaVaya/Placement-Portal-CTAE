@@ -12,17 +12,19 @@ const CompanyDashboardIndex = () => {
   }
 
   const { stats, recentApplications } = data || {};
+  const { 
+    totalApplied = 0, 
+    totalHired = 0, 
+    totalShortlisted = 0, 
+    totalRejected = 0, 
+    totalOfferSent = 0, 
+    totalJobs = 0, 
+    openJobs = 0 
+  } = stats || {};
   const statusCounts = stats?.statusCounts || {};
-
-  // Status mapping for unified state system
-  const countAPPLIED = statusCounts['APPLIED'] || statusCounts['pending'] || 0;
-  const countSHORTLISTED = statusCounts['SHORTLISTED'] || statusCounts['shortlisted'] || 0;
-  const countHIRED = statusCounts['HIRED'] || statusCounts['hired'] || 0;
-  const countOFFER_SENT = statusCounts['OFFER_SENT'] || 0;
   const countOFFER_ACCEPTED = statusCounts['OFFER_ACCEPTED'] || 0;
-  const countREJECTED = statusCounts['REJECTED'] || statusCounts['rejected'] || 0;
 
-  const totalApplications = Object.values(statusCounts).reduce((a, b) => a + b, 0);
+  const totalApplications = totalApplied;
 
   const statCards = [
     {
@@ -33,13 +35,13 @@ const CompanyDashboardIndex = () => {
     },
     {
       title: 'Shortlisted',
-      count: countSHORTLISTED,
+      count: totalShortlisted,
       icon: <CiTimer className="text-3xl text-yellow-600" />,
       bg: 'bg-yellow-50',
     },
     {
       title: 'Offers Sent',
-      count: countOFFER_SENT,
+      count: totalOfferSent,
       icon: <FiSend className="text-2xl text-purple-600" />,
       bg: 'bg-purple-50',
     },
@@ -88,12 +90,12 @@ const CompanyDashboardIndex = () => {
           </h3>
           <div className="flex flex-col gap-6 flex-1 justify-center">
             {[
-              { label: 'Applied', count: countAPPLIED, color: 'bg-blue-500', icon: '📝' },
-              { label: 'Shortlisted', count: countSHORTLISTED, color: 'bg-yellow-500', icon: '⏳' },
-              { label: 'Hired', count: countHIRED, color: 'bg-cyan-500', icon: '🎯' },
-              { label: 'Offer Sent', count: countOFFER_SENT, color: 'bg-purple-500', icon: '💌' },
+              { label: 'Applied', count: totalApplied, color: 'bg-blue-500', icon: '📝' },
+              { label: 'Shortlisted', count: totalShortlisted, color: 'bg-yellow-500', icon: '⏳' },
+              { label: 'Hired', count: totalHired, color: 'bg-cyan-500', icon: '🎯' },
+              { label: 'Offer Sent', count: totalOfferSent, color: 'bg-purple-500', icon: '💌' },
               { label: 'Offer Accepted', count: countOFFER_ACCEPTED, color: 'bg-green-500', icon: '🤝' },
-              { label: 'Rejected', count: countREJECTED, color: 'bg-red-500', icon: '❌' },
+              { label: 'Rejected', count: totalRejected, color: 'bg-red-500', icon: '❌' },
             ].map((item) => {
               const total = totalApplications || 1;
               const percent = Math.round((item.count / total) * 100);

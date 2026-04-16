@@ -464,15 +464,37 @@ const getCompanyDashboardStats = async (req, res) => {
   const { companyId } = req.user;
   const totalJobs = await JobOpeningModel.countDocuments({ 'company.id': companyId });
   const openJobs = await JobOpeningModel.countDocuments({ 'company.id': companyId, status: 'open' });
-  const statusCounts = await JobApplicationModel.aggregate([
+  const statusCountsRaw = await JobApplicationModel.aggregate([
     { $match: { companyId: new mongoose.Types.ObjectId(companyId) } },
     { $group: { _id: '$status', count: { $sum: 1 } } }
   ]);
-  const recentApplications = await JobApplicationModel.find({ companyId }).sort({ createdAt: -1 }).limit(5).populate('jobId', 'profile').populate('applicantId', 'name email');
+
+  const counts = statusCountsRaw.reduce((acc, curr) => {
+    acc[curr._id] = curr.count;
+    return acc;
+  }, {});
+
+  // Map for frontend consistency
+  const stats = {
+    totalJobs,
+    openJobs,
+    totalApplied: statusCountsRaw.reduce((sum, curr) => sum + curr.count, 0),
+    totalHired: (counts['HIRED'] || 0) + (counts['OFFER_ACCEPTED'] || 0),
+    totalShortlisted: counts['SHORTLISTED'] || 0,
+    totalRejected: (counts['REJECTED'] || 0) + (counts['OFFER_REJECTED'] || 0),
+    totalOfferSent: counts['OFFER_SENT'] || 0,
+    statusCounts: counts
+  };
+
+  const recentApplications = await JobApplicationModel.find({ companyId })
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .populate('jobId', 'profile')
+    .populate('applicantId', 'name email');
 
   res.status(StatusCodes.OK).json({
     success: true,
-    stats: { totalJobs, openJobs, statusCounts: statusCounts.reduce((acc, curr) => { acc[curr._id] = curr.count; return acc; }, {}) },
+    stats,
     recentApplications
   });
 };

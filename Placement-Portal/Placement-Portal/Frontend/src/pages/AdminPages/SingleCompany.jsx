@@ -149,6 +149,7 @@ const SingleCompany = () => {
                     <th>Branch</th>
                     <th>Job Role</th>
                     <th>Package (LPA)</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -159,6 +160,17 @@ const SingleCompany = () => {
                       <td>{student.branch || 'N/A'}</td>
                       <td>{student.jobRole || 'N/A'}</td>
                       <td>{typeof student.package === 'number' ? student.package : 'N/A'}</td>
+                      <td>
+                        <span className={`badge badge-sm font-semibold border-none ${
+                          student.status === 'OFFER_ACCEPTED' || student.status === 'HIRED' 
+                            ? 'bg-green-100 text-green-700' 
+                            : student.status === 'OFFER_REJECTED' 
+                              ? 'bg-red-100 text-red-700' 
+                              : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {student.status?.replace('_', ' ') || 'PLACED'}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -294,7 +294,7 @@ const getCompanies = async (req, res) => {
               $expr: {
                 $and: [
                   { $eq: ['$companyId', '$$companyId'] },
-                  { $eq: ['$status', 'HIRED'] },
+                  { $in: ['$status', ['HIRED', 'OFFER_ACCEPTED', 'OFFER_REJECTED']] },
                 ],
               },
             },
@@ -358,7 +358,7 @@ const getSingleCompany = async (req, res) => {
               applicantsCount: { $sum: 1 },
               hiredCount: {
                 $sum: {
-                  $cond: [{ $eq: ['$status', 'HIRED'] }, 1, 0],
+                  $cond: [{ $in: ['$status', ['HIRED', 'OFFER_ACCEPTED', 'OFFER_REJECTED']] }, 1, 0],
                 },
               },
             },
@@ -409,7 +409,7 @@ const getSingleCompany = async (req, res) => {
   );
 
   const hiredCandidates = await JobApplicationModel.aggregate([
-    { $match: { companyId: company._id, status: 'HIRED' } },
+    { $match: { companyId: company._id, status: { $in: ['HIRED', 'OFFER_ACCEPTED', 'OFFER_REJECTED'] } } },
     {
       $lookup: {
         from: JobOpeningModel.collection.name,
@@ -457,9 +457,10 @@ const getSingleCompany = async (req, res) => {
         branch: '$student.departmentName',
         jobRole: '$job.profile',
         package: 1,
+        status: 1,
       },
     },
-  ]);
+]);
 
   res.status(StatusCodes.OK).json({
     success: true,
@@ -613,7 +614,7 @@ const addCompanyAdmin = async (req, res) => {
 
 const getAdminStats = async (req, res) => {
   const hiredApplicationsAgg = [
-    { $match: { status: 'HIRED' } },
+    { $match: { status: { $in: ['HIRED', 'OFFER_ACCEPTED', 'OFFER_REJECTED'] } } },
     {
       $lookup: {
         from: JobOpeningModel.collection.name,
