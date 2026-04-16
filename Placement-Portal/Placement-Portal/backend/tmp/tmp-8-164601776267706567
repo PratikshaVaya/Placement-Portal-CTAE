@@ -1,0 +1,51 @@
+Name,Roll No,Email,Course,Department,Batch,DOB
+Student1,2022/CTAE/301,student1@college.com,Computer Science,Cse,2026,01-01-2000
+Student2,2022/CTAE/302,student2@college.com,Computer Science,AIDS,2027,02-02-2001
+Student3,2022/CTAE/303,student3@college.com,Mechancial,Mechancial,2026,03-03-2002
+Student4,2022/CTAE/304,student4@college.com,Computer Science,Cse,2027,04-04-2003
+Student5,2022/CTAE/305,student5@college.com,Computer Science,AIDS,2026,05-05-2004
+Student6,2022/CTAE/306,student6@college.com,Mechancial,Mechancial,2027,06-06-2005
+Student7,2022/CTAE/307,student7@college.com,Computer Science,Cse,2026,07-07-2000
+Student8,2022/CTAE/308,student8@college.com,Computer Science,AIDS,2027,08-08-2001
+Student9,2022/CTAE/309,student9@college.com,Mechancial,Mechancial,2026,09-09-2002
+Student10,2022/CTAE/310,student10@college.com,Computer Science,Cse,2027,10-10-2003
+Student11,2022/CTAE/311,student11@college.com,Computer Science,AIDS,2026,11-11-2004
+Student12,2022/CTAE/312,student12@college.com,Mechancial,Mechancial,2027,12-12-2005
+Student13,2022/CTAE/313,student13@college.com,Computer Science,Cse,2026,13-01-2000
+Student14,2022/CTAE/314,student14@college.com,Computer Science,AIDS,2027,14-02-2001
+Student15,2022/CTAE/315,student15@college.com,Mechancial,Mechancial,2026,15-03-2002
+Student16,2022/CTAE/316,student16@college.com,Computer Science,Cse,2027,16-04-2003
+Student17,2022/CTAE/317,student17@college.com,Computer Science,AIDS,2026,17-05-2004
+Student18,2022/CTAE/318,student18@college.com,Mechancial,Mechancial,2027,18-06-2005
+Student19,2022/CTAE/319,student19@college.com,Computer Science,Cse,2026,19-07-2000
+Student20,2022/CTAE/320,student20@college.com,Computer Science,AIDS,2027,20-08-2001
+Student21,2022/CTAE/321,student21@college.com,Mechancial,Mechancial,2026,21-09-2002
+Student22,2022/CTAE/322,student22@college.com,Computer Science,Cse,2027,22-10-2003
+Student23,2022/CTAE/323,student23@college.com,Computer Science,AIDS,2026,23-11-2004
+Student24,2022/CTAE/324,student24@college.com,Mechancial,Mechancial,2027,24-12-2005
+Student25,2022/CTAE/325,student25@college.com,Computer Science,Cse,2026,25-01-2000
+Student26,2022/CTAE/326,student26@college.com,Computer Science,AIDS,2027,26-02-2001
+Student27,2022/CTAE/327,student27@college.com,Mechancial,Mechancial,2026,27-03-2002
+Student28,2022/CTAE/328,student28@college.com,Computer Science,Cse,2027,28-04-2003
+Student29,2022/CTAE/329,student29@college.com,Computer Science,AIDS,2026,01-05-2004
+Student30,2022/CTAE/330,student30@college.com,Mechancial,Mechancial,2027,02-06-2005
+Student31,2022/CTAE/331,student31@college.com,Computer Science,Cse,2026,03-07-2000
+Student32,2022/CTAE/332,student32@college.com,Computer Science,AIDS,2027,04-08-2001
+Student33,2022/CTAE/333,student33@college.com,Mechancial,Mechancial,2026,05-09-2002
+Student34,2022/CTAE/334,student34@college.com,Computer Science,Cse,2027,06-10-2003
+Student35,2022/CTAE/335,student35@college.com,Computer Science,AIDS,2026,07-11-2004
+Student36,2022/CTAE/336,student36@college.com,Mechancial,Mechancial,2027,08-12-2005
+Student37,2022/CTAE/337,student37@college.com,Computer Science,Cse,2026,09-01-2000
+Student38,2022/CTAE/338,student38@college.com,Computer Science,AIDS,2027,10-02-2001
+Student39,2022/CTAE/339,student39@college.com,Mechancial,Mechancial,2026,11-03-2002
+Student40,2022/CTAE/340,student40@college.com,Computer Science,Cse,2027,12-04-2003
+Student41,2022/CTAE/341,student41@college.com,Computer Science,AIDS,2026,13-05-2004
+Student42,2022/CTAE/342,student42@college.com,Mechancial,Mechancial,2027,14-06-2005
+Student43,2022/CTAE/343,student43@college.com,Computer Science,Cse,2026,15-07-2000
+Student44,2022/CTAE/344,student44@college.com,Computer Science,AIDS,2027,16-08-2001
+Student45,2022/CTAE/345,student45@college.com,Mechancial,Mechancial,2026,17-09-2002
+Student46,2022/CTAE/346,student46@college.com,Computer Science,Cse,2027,18-10-2003
+Student47,2022/CTAE/347,student47@college.com,Computer Science,AIDS,2026,19-11-2004
+Student48,2022/CTAE/348,student48@college.com,Mechancial,Mechancial,2027,20-12-2005
+Student49,2022/CTAE/349,student49@college.com,Computer Science,Cse,2026,21-01-2000
+Student50,2022/CTAE/350,student50@college.com,Computer Science,AIDS,2027,22-02-2001
