@@ -13,18 +13,27 @@ const ApplicationsContainer = () => {
   for (let item of applications) {
     const status = item._id.status;
     switch (status) {
-      case 'pending':
-        pending = item.application;
+      case 'APPLIED':
+      case 'OFFER_SENT':
+        pending = [...pending, ...item.application];
         break;
-      case 'shortlisted':
-        shortlisted = item.application;
+      case 'SHORTLISTED':
+        shortlisted = [...shortlisted, ...item.application];
         break;
-      case 'hired':
-        hired = item.application;
+      case 'HIRED':
+      case 'OFFER_ACCEPTED':
+        hired = [...hired, ...item.application];
         break;
-      case 'rejected':
-        rejected = item.application;
+      case 'REJECTED':
+      case 'OFFER_REJECTED':
+        rejected = [...rejected, ...item.application];
         break;
+      default:
+        // Fallback for any other or legacy statuses
+        if (status?.toLowerCase() === 'pending') pending = [...pending, ...item.application];
+        if (status?.toLowerCase() === 'shortlisted') shortlisted = [...shortlisted, ...item.application];
+        if (status?.toLowerCase() === 'hired') hired = [...hired, ...item.application];
+        if (status?.toLowerCase() === 'rejected') rejected = [...rejected, ...item.application];
     }
   }
 

@@ -208,6 +208,11 @@ const createJobApplication = async (req, res) => {
     throw new CustomAPIError.BadRequestError(`Eligibility failed: ${eligibility.reasons.join(', ')}`);
   }
 
+  const existingApplication = await JobApplicationModel.findOne({ jobId, applicantId });
+  if (existingApplication) {
+    throw new CustomAPIError.BadRequestError('You have already applied for this job.');
+  }
+
   const fileUploadResp = await fileUpload(resumeFile, 'resumes', 'document');
   const resume = fileUploadResp?.fileURL;
 
@@ -245,9 +250,20 @@ const getOfferStatus = async (req, res) => {
   const application = await JobApplicationModel.findOne({ 
     applicantId: userId, 
     status: { $in: ['OFFER_SENT', 'OFFER_ACCEPTED', 'OFFER_REJECTED', 'HIRED'] } 
-  }).populate('jobId');
+  }).populate('jobId').populate('companyId');
 
-  res.status(StatusCodes.OK).json({ success: true, offer: application });
+  if (!application) {
+    return res.status(StatusCodes.OK).json({ success: true, offer: null });
+  }
+
+  const offer = {
+    ...application.toObject(),
+    jobTitle: application.jobId?.profile,
+    companyName: application.companyId?.name,
+    offerLetter: application.offerLetterUrl,
+  };
+
+  res.status(StatusCodes.OK).json({ success: true, offer });
 };
 
 const acceptOffer = async (req, res) => {

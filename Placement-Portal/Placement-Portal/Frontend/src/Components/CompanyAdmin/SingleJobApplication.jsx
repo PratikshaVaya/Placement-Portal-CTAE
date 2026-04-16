@@ -200,15 +200,16 @@ const TabContent = ({
               </thead>
               <tbody>
                 {arr.map((application) => {
-                  const {
-                    _id,
-                    applicantName,
-                    applicantId,
-                    coverLetter,
-                    resume,
-                    portfolio,
-                    status
-                  } = application;
+                    const {
+                      _id,
+                      applicantName,
+                      applicantId,
+                      coverLetter,
+                      resume,
+                      portfolio,
+                      status,
+                      offerLetterUrl,
+                    } = application;
                   return (
                     <tr key={_id}>
                       <td>
