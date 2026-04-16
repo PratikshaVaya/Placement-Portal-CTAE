@@ -19,7 +19,7 @@ const {
 const UserModel = require('../models/User');
 
 const { fileUpload } = require('../utils');
-const { PlacementModel } = require('../models/student');
+const { PlacementModel, EducationModel } = require('../models/student');
 
 const createJobOpening = async (req, res) => {
   const {
@@ -306,6 +306,60 @@ const jobApplicationAction = async (req, res) => {
   res.status(StatusCodes.OK).json({ success: true, message: `Candidate status updated to ${updatedStatus}`, application });
 };
 
+const bulkJobApplicationAction = async (req, res) => {
+  const { ids, action } = req.body;
+  const userId = req.user.userId;
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new CustomAPIError.BadRequestError('No application IDs provided');
+  }
+
+  const results = [];
+  for (const applicationId of ids) {
+    try {
+      const application = await JobApplicationModel.findById(applicationId);
+      if (!application) continue;
+
+      const { applicantId, jobId, companyId, status: currentStatus } = application;
+      const { isValid, updatedStatus, currentJobArr, updatedJobArr, currentApplicantArr, updatedApplicantArr } = isActionValid(action, currentStatus);
+
+      if (!isValid) continue;
+
+      const job = await JobOpeningModel.findById(jobId);
+      if (job.status !== 'open' && action !== 'reject') continue;
+
+      const company = await CompanyModel.findById(companyId);
+      if (!company.admins.includes(userId)) continue;
+
+      application.status = updatedStatus;
+
+      if (currentJobArr && updatedJobArr) {
+        job[currentJobArr] = job[currentJobArr].filter(id => id.toString() !== applicantId.toString());
+        job[updatedJobArr].push(applicantId);
+      }
+
+      const applicant = await UserModel.findById(applicantId);
+      if (currentApplicantArr && updatedApplicantArr) {
+        applicant[currentApplicantArr] = applicant[currentApplicantArr].filter(id => id.toString() !== jobId.toString());
+        applicant[updatedApplicantArr].push(jobId);
+      }
+
+      await application.save();
+      await job.save();
+      await applicant.save();
+      results.push(application._id);
+    } catch (err) {
+      console.error(`Error processing application ${applicationId}:`, err);
+    }
+  }
+
+  res.status(StatusCodes.OK).json({ 
+    success: true, 
+    message: `Bulk update successful for ${results.length} candidates.`, 
+    updatedIds: results 
+  });
+};
+
 const sendOffer = async (req, res) => {
   const { applicationId } = req.body;
   const userId = req.user.userId;
@@ -400,20 +454,27 @@ const getTopCandidates = async (req, res) => {
   const job = await JobOpeningModel.findById(jobId);
   if (!job) throw new CustomAPIError.NotFoundError('Job not found');
 
-  const deptIds = Array.isArray(job.receivingDepartments) 
+  const courseIds = (Array.isArray(job.receivingCourses) 
+    ? job.receivingCourses.map((c) => c.id) 
+    : job.receivingCourses?.id ? [job.receivingCourses.id] : [])
+    .filter(id => id)
+    .map(id => new mongoose.Types.ObjectId(id));
+
+  const deptIds = (Array.isArray(job.receivingDepartments) 
     ? job.receivingDepartments.map((d) => d.id) 
-    : job.receivingDepartments?.id ? [job.receivingDepartments.id] : [];
-  const batchIds = Array.isArray(job.receivingBatch) 
+    : job.receivingDepartments?.id ? [job.receivingDepartments.id] : [])
+    .filter(id => id)
+    .map(id => new mongoose.Types.ObjectId(id));
+
+  const batchIds = (Array.isArray(job.receivingBatch) 
     ? job.receivingBatch.map((b) => b.id) 
-    : job.receivingBatch?.id ? [job.receivingBatch.id] : [];
+    : job.receivingBatch?.id ? [job.receivingBatch.id] : [])
+    .filter(id => id)
+    .map(id => new mongoose.Types.ObjectId(id));
 
   const query = {
     role: 'student',
-    courseId: { 
-      $in: Array.isArray(job.receivingCourses) 
-        ? job.receivingCourses.map((c) => c.id) 
-        : job.receivingCourses?.id ? [job.receivingCourses.id] : [] 
-    },
+    courseId: { $in: courseIds },
   };
 
   if (deptIds.length > 0) query.departmentId = { $in: deptIds };
@@ -424,7 +485,7 @@ const getTopCandidates = async (req, res) => {
 
   const rankedCandidates = await Promise.all(
     students.map(async (student) => {
-      const studentEducation = await (EducationModel || require('../models/student').EducationModel).findOne({ studentId: student._id });
+      const studentEducation = await EducationModel.findOne({ studentId: student._id });
       const studentSkills = (student.skills || []).map((s) => s.toLowerCase().trim());
       
       let skillScore = 0;
@@ -447,7 +508,7 @@ const getTopCandidates = async (req, res) => {
         cgpa,
         skills: student.skills,
         matchScore: Math.round(matchScore * 100),
-        isApplied: job.applicants.includes(student._id),
+        isApplied: await JobApplicationModel.exists({ jobId, applicantId: student._id }),
       };
     })
   );
@@ -511,5 +572,5 @@ const getStudentPublicProfile = async (req, res) => {
 module.exports = {
   createJobOpening, updateJobOpening, deleteJobOpening, getJobsForIncharge, getJobApplications, jobApplicationAction,
   getStudentPublicProfile, getSingleJob, getSingleJobApplications, uploadOfferLetter, getOfferDetails, changePassword,
-  getTopCandidates, getCompanyDashboardStats, sendOffer
+  getTopCandidates, getCompanyDashboardStats, sendOffer, bulkJobApplicationAction
 };

@@ -10,6 +10,7 @@ function studentProfileDetailsAgg(studentId, isPrivate = false) {
     {
       $project: {
         name: 1,
+        email: 1,
         photo: 1,
         courseName: 1,
         courseLevel: 1,

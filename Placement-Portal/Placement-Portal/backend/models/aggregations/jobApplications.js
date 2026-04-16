@@ -115,6 +115,7 @@ function jobApplicationsAgg({ companyId }) {
     {
       $project: {
         profile: 1,
+        keySkills: 1,
         openingsCount: 1,
         deadline: 1,
         applications: 1,
@@ -165,6 +166,7 @@ function jobApplicationsAgg({ companyId }) {
               applicantName: 1,
               applicantEmail: '$applicantUserData.email',
               applicantBranch: '$applicantUserData.departmentName',
+              applicantSkills: '$applicantUserData.skills',
               coverLetter: 1,
               resume: 1,
               portfolio: 1,
@@ -260,6 +262,7 @@ function jobApplicationsAggWithFilters({ companyId, filters = {} }) {
     {
       $project: {
         profile: 1,
+        keySkills: 1,
         openingsCount: 1,
         deadline: 1,
         applications: 1,
@@ -310,6 +313,7 @@ function jobApplicationsAggWithFilters({ companyId, filters = {} }) {
               applicantName: 1,
               applicantEmail: '$applicantUserData.email',
               applicantBranch: '$applicantUserData.departmentName',
+              applicantSkills: '$applicantUserData.skills',
               coverLetter: 1,
               resume: 1,
               portfolio: 1,
@@ -399,6 +403,7 @@ function singleJobApplicationsAgg({ jobId, companyId }) {
     {
       $project: {
         profile: 1,
+        keySkills: 1,
         openingsCount: 1,
         deadline: 1,
         applications: 1,
@@ -416,14 +421,82 @@ function singleJobApplicationsAgg({ jobId, companyId }) {
         as: 'applications',
         pipeline: [
           {
+            $lookup: {
+              from: 'users',
+              localField: 'applicantId',
+              foreignField: '_id',
+              as: 'applicantUserData',
+            },
+          },
+          {
+            $unwind: {
+              path: '$applicantUserData',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $lookup: {
+              from: 'StudentEducationData',
+              localField: 'applicantId',
+              foreignField: 'studentId',
+              as: 'educationData',
+            },
+          },
+          {
+            $unwind: {
+              path: '$educationData',
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
             $project: {
               applicantId: 1,
               applicantName: 1,
+              applicantEmail: '$applicantUserData.email',
+              applicantBranch: '$applicantUserData.departmentName',
+              applicantSkills: '$applicantUserData.skills',
               coverLetter: 1,
               resume: 1,
               portfolio: 1,
               status: 1,
               offerLetterUrl: 1,
+              offerId: 1,
+              appliedAt: '$createdAt',
+              applicantCGPA: {
+                $cond: [
+                  '$educationData.graduation.aggregateGPA',
+                  '$educationData.graduation.aggregateGPA',
+                  null,
+                ],
+              },
+              applicant10thPercentage: {
+                $cond: [
+                  '$educationData.highschool',
+                  '$educationData.highschool.score',
+                  null,
+                ],
+              },
+              applicant12thPercentage: {
+                $cond: [
+                  '$educationData.intermediate',
+                  '$educationData.intermediate.score',
+                  null,
+                ],
+              },
+              applicantGraduationPercentage: {
+                $cond: [
+                  {
+                    $and: [
+                      '$educationData.graduation.scores',
+                      { $gt: [{ $size: '$educationData.graduation.scores' }, 0] },
+                    ],
+                  },
+                  {
+                    $avg: '$educationData.graduation.scores.gpa',
+                  },
+                  null,
+                ],
+              },
             },
           },
           {
@@ -432,11 +505,6 @@ function singleJobApplicationsAgg({ jobId, companyId }) {
               localField: 'offerId',
               foreignField: '_id',
               as: 'offer',
-            },
-          },
-          {
-            $addFields: {
-              offer: { $arrayElemAt: ['$offer', 0] },
             },
           },
           {
@@ -480,6 +548,7 @@ function studentJobApplicationsAgg({ applicantId }) {
           {
             $project: {
               profile: 1,
+        keySkills: 1,
               company: 1,
             },
           },

@@ -247,16 +247,26 @@ const ApplicationFilterPanel = ({ onFiltersChange, branches = [] }) => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             <button
               onClick={applyFilters}
-              className="btn btn-primary btn-sm flex-1"
+              className="btn btn-primary btn-sm flex-1 min-w-[120px]"
             >
               Apply Filters
             </button>
             <button
+              onClick={() => {
+                const newSmartValue = !filters.isSmartFilter;
+                handleFilterChange('isSmartFilter', newSmartValue);
+                onFiltersChange({ ...filters, isSmartFilter: newSmartValue });
+              }}
+              className={`btn btn-sm flex-1 min-w-[120px] ${filters.isSmartFilter ? 'btn-secondary animate-pulse shadow-lg border-2 border-purple-400' : 'btn-outline border-purple-400 text-purple-600'}`}
+            >
+              {filters.isSmartFilter ? '✨ AI Filter Active' : '✨ Smart AI Filter'}
+            </button>
+            <button
               onClick={resetFilters}
-              className="btn btn-outline btn-sm flex-1"
+              className="btn btn-outline btn-sm flex-1 min-w-[100px]"
             >
               Reset
             </button>

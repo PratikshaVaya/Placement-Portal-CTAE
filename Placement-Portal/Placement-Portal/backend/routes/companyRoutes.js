@@ -6,6 +6,7 @@ const {
   getJobsForIncharge,
   getJobApplications,
   jobApplicationAction,
+  bulkJobApplicationAction,
   updateJobOpening,
   deleteJobOpening,
   getStudentPublicProfile,
@@ -54,6 +55,12 @@ router.get(
   '/applications/:applicationId/students/:studentId',
   authorizeRoles('company_admin'),
   getStudentPublicProfile
+);
+
+router.patch(
+  '/applications/bulk-action',
+  authorizeRoles('company_admin'),
+  bulkJobApplicationAction
 );
 
 router.patch(

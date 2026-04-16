@@ -14,12 +14,13 @@ const ApplicationsContainer = () => {
     <div>
       <PlacementModal modalData={modalData} />
       {jobsWithApplications.map((job) => {
-        const { _id, profile, openingsCount, deadline, applications } = job;
+        const { _id, profile, keySkills, openingsCount, deadline, applications } = job;
         return (
           <SingleJobApplication
             key={_id}
             jobId={_id}
             profile={profile}
+            keySkills={keySkills}
             openingsCount={openingsCount}
             deadline={deadline}
             applications={applications}

@@ -3,6 +3,7 @@ import { customFetch } from '../../utils';
 import { toast } from 'react-toastify';
 import { FiExternalLink, FiSend, FiUpload } from 'react-icons/fi';
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
 import OfferUploadModal from '../OfferUploadModal';
 import ApplicationFilterPanel from './ApplicationFilterPanel';
@@ -10,6 +11,7 @@ import ApplicationFilterPanel from './ApplicationFilterPanel';
 const SingleJobApplication = ({
   jobId,
   profile,
+  keySkills,
   openingsCount,
   deadline,
   applications,
@@ -63,6 +65,17 @@ const SingleJobApplication = ({
     }
   };
 
+  const handleBulkAction = async (ids, action) => {
+    try {
+      const { data } = await customFetch.patch('/company/applications/bulk-action', { ids, action });
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ['single-job-applications'] });
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    } catch (error) {
+       toast.error(error?.response?.data?.message || 'Bulk action failed');
+    }
+  }
+
   const handleSendOffer = async (applicationId) => {
     try {
       const { data } = await customFetch.post('/company/offer/send', { applicationId });
@@ -73,16 +86,40 @@ const SingleJobApplication = ({
     }
   };
 
-  // Client-side filtering function
+  const calculateMatchScore = (app) => {
+    const studentSkills = (app.applicantSkills || []).map(s => s.toLowerCase().trim());
+    const jobSkills = (keySkills || []).map(s => s.toLowerCase().trim());
+    
+    let skillScore = 0;
+    if (jobSkills.length > 0) {
+      const matchedSkills = jobSkills.filter(skill => 
+        studentSkills.some(s => s.includes(skill) || skill.includes(s))
+      );
+      skillScore = matchedSkills.length / jobSkills.length;
+    }
+
+    const cgpa = app.applicantCGPA || 0;
+    const matchScore = (skillScore * 0.5) + (cgpa / 10 * 0.3) + (0.2); 
+    return Math.round(matchScore * 100);
+  };
+
+  // Client-side filtering and sorting function
   const applyClientFilters = (applications, currentFilters) => {
     if (!applications || !currentFilters) return applications;
 
-    return applications.filter((app) => {
-      // Search filter (name)
+    let filtered = applications.map(app => ({
+        ...app,
+        matchScore: calculateMatchScore(app)
+    }));
+
+    filtered = filtered.filter((app) => {
+      // Search filter (name, email, skills)
       if (currentFilters.search) {
         const searchLower = currentFilters.search.toLowerCase();
         const matchName = app.applicantName?.toLowerCase().includes(searchLower);
-        if (!matchName) return false;
+        const matchEmail = app.applicantEmail?.toLowerCase().includes(searchLower);
+        const matchSkills = app.applicantSkills?.toLowerCase().includes(searchLower);
+        if (!matchName && !matchEmail && !matchSkills) return false;
       }
 
       // Resume filter
@@ -92,11 +129,61 @@ const SingleJobApplication = ({
         if (hasResume !== filterHasResume) return false;
       }
 
+      // Branch filter
+      if (currentFilters.branch) {
+        if (app.applicantBranch !== currentFilters.branch) return false;
+      }
+
+      // Skills filter
+      if (currentFilters.skills) {
+        const skillsLower = currentFilters.skills.toLowerCase().split(',').map(s => s.trim());
+        const applicantSkills = (app.applicantSkills || '').toLowerCase();
+        const hasAllSkills = skillsLower.every(skill => applicantSkills.includes(skill));
+        if (!hasAllSkills) return false;
+      }
+
+      // Academic Filters
+      if (currentFilters.minCGPA && (app.applicantCGPA || 0) < parseFloat(currentFilters.minCGPA)) return false;
+      if (currentFilters.min10thPercentage && (app.applicant10thPercentage || 0) < parseFloat(currentFilters.min10thPercentage)) return false;
+      if (currentFilters.min12thPercentage && (app.applicant12thPercentage || 0) < parseFloat(currentFilters.min12thPercentage)) return false;
+      if (currentFilters.minGraduationPercentage && (app.applicantGraduationPercentage || 0) < parseFloat(currentFilters.minGraduationPercentage)) return false;
+
       return true;
     });
+
+    // Sort result
+    if (currentFilters.isSmartFilter) {
+        filtered.sort((a, b) => b.matchScore - a.matchScore);
+        return filtered.slice(0, 10);
+    }
+
+    if (currentFilters.sortBy) {
+      filtered.sort((a, b) => {
+        switch (currentFilters.sortBy) {
+          case 'highest-cgpa':
+            return (b.applicantCGPA || 0) - (a.applicantCGPA || 0);
+          case 'highest-graduation':
+            return (b.applicantGraduationPercentage || 0) - (a.applicantGraduationPercentage || 0);
+          case 'recently-applied':
+          default:
+            return new Date(b.appliedAt) - new Date(a.appliedAt);
+        }
+      });
+    }
+
+    return filtered;
   };
 
-  const allBranches = ['CSE', 'IT', 'ECE', 'Mechanical', 'Civil', 'Electrical'];
+  const courseOptions = useSelector((state) => state.courseOptions);
+
+  // Dynamic branches from course options
+  const dynamicBranches = Array.from(new Set(
+    Object.values(courseOptions).flatMap(course => 
+      course.departments?.map(d => d.departmentName) || []
+    )
+  )).sort();
+
+  const allBranches = dynamicBranches.length > 0 ? dynamicBranches : ['CSE', 'IT', 'ECE', 'Mechanical', 'Civil', 'Electrical'];
 
   return (
     <div className="py-4 px-8 flex flex-col gap-y-4">
@@ -125,6 +212,8 @@ const SingleJobApplication = ({
           arr={applyClientFilters(pending, filters)}
           originalLength={pending.length}
           onAction={handleAction}
+          onBulkAction={handleBulkAction}
+          isSmart={!!filters.isSmartFilter}
         />
         <TabContent
           jobId={jobId}
@@ -163,10 +252,17 @@ const TabContent = ({
   arr,
   originalLength,
   onAction,
+  onBulkAction,
   onSendOffer,
+  isSmart,
 }) => {
   const [selectedApplicationForOffer, setSelectedApplicationForOffer] =
     useState(null);
+
+  const handleBulkShortlist = () => {
+    const ids = arr.map(app => app._id);
+    onBulkAction(ids, 'shortlist');
+  };
 
   return (
     <>
@@ -181,14 +277,33 @@ const TabContent = ({
       <div role="tabpanel" className="tab-content bg-base-100 border-base-300 rounded-box p-6">
         {arr.length ? (
           <div className="overflow-x-auto">
-            <div className="mb-2 text-sm text-gray-600">
-              Showing {arr.length} of {originalLength} {jobType} applications
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+               <div className="text-sm text-gray-600">
+                {isSmart ? (
+                  <span className="flex items-center gap-1 text-purple-600 font-bold animate-pulse">
+                    ✨ Showing Top {arr.length} AI Recommended Candidates
+                  </span>
+                ) : (
+                  `Showing ${arr.length} of ${originalLength} ${jobType} applications`
+                )}
+              </div>
+              
+              {isSmart && jobType === 'pending' && (
+                <button 
+                  onClick={handleBulkShortlist}
+                  className="btn btn-sm btn-secondary gap-2 shadow-md hover:scale-105 transition-transform"
+                >
+                  ✨ Auto-Shortlist Top {arr.length}
+                </button>
+              )}
             </div>
+
             <table className="table">
               {/* head */}
               <thead className="text-base font-normal">
                 <tr>
                   <th>Name</th>
+                  {isSmart && <th className="text-purple-600 font-bold">Match Score</th>}
                   <th>Cover Letter</th>
                   <th>Resume</th>
                   <th>Portfolio</th>
@@ -220,6 +335,13 @@ const TabContent = ({
                           {applicantName}
                         </a>
                       </td>
+                      {isSmart && (
+                        <td>
+                          <div className="badge badge-secondary badge-outline font-bold">
+                            {application.matchScore}%
+                          </div>
+                        </td>
+                      )}
                       <td className="max-w-xs truncate">{coverLetter || 'N/A'}</td>
                       <td>
                         {resume ? (

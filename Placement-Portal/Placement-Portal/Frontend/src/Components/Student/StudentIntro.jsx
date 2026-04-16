@@ -4,6 +4,7 @@ import defaultAvatar from '../../assets/default-avatar.jpg';
 const StudentIntro = () => {
   const {
     name,
+    email,
     courseName,
     departmentName,
     rollNo,
@@ -22,7 +23,10 @@ const StudentIntro = () => {
           width="150"
           className="rounded-full"
         />
-        <div className="text-center text-2xl tracking-wide">{name}</div>
+        <div className="text-center">
+          <div className="text-2xl tracking-wide font-semibold">{name}</div>
+          <div className="text-gray-500 text-sm mt-1">{email}</div>
+        </div>
       </div>
       <div className="flex flex-col gap-y-2">
         <p>
