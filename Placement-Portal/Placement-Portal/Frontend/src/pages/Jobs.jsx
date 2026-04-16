@@ -1,5 +1,5 @@
 import { toast } from 'react-toastify';
-import { redirect } from 'react-router-dom';
+import { redirect, useLoaderData } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -58,14 +58,15 @@ export const loader = (queryClient, store) => {
     const { role } = store.getState()?.userState?.user;
 
     try {
-      const { jobs, hiredStatus, hiredJobId } = await queryClient.ensureQueryData(
+      const response = await queryClient.ensureQueryData(
         fetchJobsQuery({ role, status: 'open' })
       );
+      const { jobs, hiredStatus, hiredJobId, error } = response;
       store.dispatch(setCurrentJobs({ jobs }));
       if (role === 'student') {
         store.dispatch(setHiredStatus({ hiredStatus, hiredJobId }));
       }
-      return true;
+      return { error };
     } catch (error) {
       const errorMessage =
         error?.response?.data?.message || 'Failed to fetch jobs!';
@@ -77,6 +78,7 @@ export const loader = (queryClient, store) => {
 };
 
 const Jobs = () => {
+  const { error: profileError } = useLoaderData() || {};
   const { currentFilter, currentJobs } = useSelector((state) => state.jobState);
   const { role } = useSelector((state) => state.userState.user);
   const queryClient = useQueryClient();
@@ -116,6 +118,14 @@ const Jobs = () => {
           changeFn={handleJobChange}
         />
       </div>
+
+      {profileError && (
+        <div className="my-4 rounded-md border border-red-300 bg-red-50 p-4 text-red-800 flex items-center gap-2">
+          <span className="text-xl">⚠️</span>
+          <p>{profileError}</p>
+        </div>
+      )}
+
       {role === 'student' && currentFilter === 'open' && urgentJobsCount > 0 && (
         <div className="my-4 rounded-md border border-orange-300 bg-orange-50 p-4 text-orange-800">
           <strong>{urgentJobsCount}</strong> job{urgentJobsCount > 1 ? 's' : ''} closing in 2 days

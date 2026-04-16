@@ -8,7 +8,6 @@ const {
   jobApplicationAction,
   updateJobOpening,
   deleteJobOpening,
-  createOnCampusPlacement,
   getStudentPublicProfile,
   getSingleJob,
   getSingleJobApplications,
@@ -17,6 +16,7 @@ const {
   changePassword,
   getTopCandidates,
   getCompanyDashboardStats,
+  sendOffer
 } = require('../controllers/companyController');
 
 router.post('/change-password', authorizeRoles('company_admin'), changePassword);
@@ -42,6 +42,8 @@ router.get(
   getTopCandidates
 );
 
+router.post('/offer/send', authorizeRoles('company_admin'), sendOffer);
+
 router.get(
   '/applications',
   authorizeRoles('company_admin'),
@@ -58,12 +60,6 @@ router.patch(
   '/applications/:id/action/:action',
   authorizeRoles('company_admin'),
   jobApplicationAction
-);
-
-router.post(
-  '/applications/:id/placement',
-  authorizeRoles('company_admin'),
-  createOnCampusPlacement
 );
 
 router.post(

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { customFetch } from '../../utils';
 import { toast } from 'react-toastify';
-import { FiExternalLink } from 'react-icons/fi';
+import { FiExternalLink, FiSend, FiUpload } from 'react-icons/fi';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import OfferUploadModal from '../OfferUploadModal';
@@ -22,15 +22,22 @@ const SingleJobApplication = ({
   for (let item of applications) {
     const status = item._id.status;
     switch (status) {
-      case 'pending':
+      case 'APPLIED':
+      case 'pending': // backward compatibility
         pending = item.applications;
         break;
+      case 'SHORTLISTED':
       case 'shortlisted':
         shortlisted = item.applications;
         break;
+      case 'HIRED':
+      case 'OFFER_SENT':
+      case 'OFFER_ACCEPTED':
+      case 'OFFER_REJECTED':
       case 'hired':
-        hired = item.applications;
+        hired = [...hired, ...item.applications];
         break;
+      case 'REJECTED':
       case 'rejected':
         rejected = item.applications;
         break;
@@ -53,6 +60,16 @@ const SingleJobApplication = ({
       const errorMessage =
         error?.response?.data?.message || 'Failed to perform action!';
       toast.error(errorMessage);
+    }
+  };
+
+  const handleSendOffer = async (applicationId) => {
+    try {
+      const { data } = await customFetch.post('/company/offer/send', { applicationId });
+      toast.success(data.message || 'Offer sent!');
+      queryClient.invalidateQueries({ queryKey: ['single-job-applications'] });
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Failed to send offer');
     }
   };
 
@@ -104,6 +121,7 @@ const SingleJobApplication = ({
         <TabContent
           jobId={jobId}
           jobType="pending"
+          label="APPLIED"
           arr={applyClientFilters(pending, filters)}
           originalLength={pending.length}
           onAction={handleAction}
@@ -111,6 +129,7 @@ const SingleJobApplication = ({
         <TabContent
           jobId={jobId}
           jobType="shortlisted"
+          label="SHORTLISTED"
           arr={applyClientFilters(shortlisted, filters)}
           originalLength={shortlisted.length}
           onAction={handleAction}
@@ -118,13 +137,16 @@ const SingleJobApplication = ({
         <TabContent
           jobId={jobId}
           jobType="hired"
+          label="HIRED / OFFERS"
           arr={applyClientFilters(hired, filters)}
           originalLength={hired.length}
           onAction={handleAction}
+          onSendOffer={handleSendOffer}
         />
         <TabContent
           jobId={jobId}
           jobType="rejected"
+          label="REJECTED"
           arr={applyClientFilters(rejected, filters)}
           originalLength={rejected.length}
           onAction={handleAction}
@@ -136,10 +158,12 @@ const SingleJobApplication = ({
 
 const TabContent = ({
   jobType,
+  label,
   jobId,
   arr,
   originalLength,
   onAction,
+  onSendOffer,
 }) => {
   const [selectedApplicationForOffer, setSelectedApplicationForOffer] =
     useState(null);
@@ -150,11 +174,11 @@ const TabContent = ({
         type="radio"
         name={`${jobId}_tab`}
         role="tab"
-        className="tab capitalize text-blue-500"
-        aria-label={jobType}
+        className="tab capitalize text-blue-500 whitespace-nowrap"
+        aria-label={label || jobType}
         defaultChecked={jobType === 'pending'}
       />
-      <div role="tabpanel" className="tab-content">
+      <div role="tabpanel" className="tab-content bg-base-100 border-base-300 rounded-box p-6">
         {arr.length ? (
           <div className="overflow-x-auto">
             <div className="mb-2 text-sm text-gray-600">
@@ -171,7 +195,7 @@ const TabContent = ({
                   {(jobType === 'pending' || jobType === 'shortlisted') && (
                     <th>Action</th>
                   )}
-                  {jobType === 'hired' && <th>Offer Action</th>}
+                  {jobType === 'hired' && <th>Status & Offer Action</th>}
                 </tr>
               </thead>
               <tbody>
@@ -183,27 +207,32 @@ const TabContent = ({
                     coverLetter,
                     resume,
                     portfolio,
+                    status
                   } = application;
                   return (
                     <tr key={_id}>
                       <td>
                         <a
                           href={`/company-dashboard/applications/${_id}/students/${applicantId}`}
-                          className="link"
+                          className="link font-semibold"
                         >
                           {applicantName}
                         </a>
                       </td>
-                      <td>{coverLetter}</td>
-                      <td className="link">
-                        <a href={resume} target="_blank" rel="noreferrer">
-                          Resume
-                        </a>
+                      <td className="max-w-xs truncate">{coverLetter || 'N/A'}</td>
+                      <td>
+                        {resume ? (
+                          <a href={resume} target="_blank" rel="noreferrer" className="btn btn-ghost btn-xs text-blue-600">
+                             Resume
+                          </a>
+                        ) : 'No Resume'}
                       </td>
-                      <td className="link">
-                        <a href={portfolio} target="_blank" rel="noreferrer">
-                          Portfolio
-                        </a>
+                      <td>
+                        {portfolio ? (
+                          <a href={portfolio} target="_blank" rel="noreferrer" className="btn btn-ghost btn-xs text-blue-600">
+                            Portfolio
+                          </a>
+                        ) : 'N/A'}
                       </td>
                       {jobType === 'pending' ? (
                         <td className="flex flex-wrap gap-2">
@@ -221,21 +250,31 @@ const TabContent = ({
                           <ActionButton action="reject" applicationId={_id} onAction={onAction} />
                         </td>
                       ) : jobType === 'hired' ? (
-                        <td className="flex flex-wrap items-center gap-2">
-                          <span className="badge badge-info badge-outline">
-                            {application.offerStatus === 'accepted'
-                              ? 'Offer accepted'
-                              : application.offerStatus === 'rejected'
-                              ? 'Offer rejected'
-                              : 'Offer pending'}
-                          </span>
-                          {application.offerStatus === 'accepted' && (
+                        <td className="flex flex-wrap items-center gap-4">
+                          <StatusBadge status={status} />
+                          
+                          {status === 'HIRED' && (
                             <button
-                              className="btn btn-sm btn-info text-white"
+                              className="btn btn-xs btn-primary text-white gap-1"
+                              onClick={() => onSendOffer(_id)}
+                            >
+                              <FiSend size={12} /> Send Offer
+                            </button>
+                          )}
+
+                          {status === 'OFFER_ACCEPTED' && (
+                            <button
+                              className="btn btn-xs btn-info text-white gap-1"
                               onClick={() => setSelectedApplicationForOffer(_id)}
                             >
-                              Upload Offer
+                              <FiUpload size={12} /> {application.offerLetterUrl ? 'Update Offer Letter' : 'Upload Offer Letter'}
                             </button>
+                          )}
+                          
+                          {application.offerLetterUrl && (
+                            <a href={application.offerLetterUrl} target="_blank" rel="noreferrer" className="text-xs link link-primary">
+                              View Letter
+                            </a>
                           )}
                         </td>
                       ) : null}
@@ -246,10 +285,10 @@ const TabContent = ({
             </table>
           </div>
         ) : (
-          <p className="mt-4 text-center py-8 text-gray-500">
+          <p className="mt-4 text-center py-8 text-gray-500 font-medium">
             {originalLength === 0
-              ? `No ${jobType} applications`
-              : `No applications match the selected filters`}
+              ? `No ${jobType} applications yet.`
+              : `No applications match the selected filters.`}
           </p>
         )}
       </div>
@@ -264,8 +303,37 @@ const TabContent = ({
   );
 };
 
+const StatusBadge = ({ status }) => {
+  let badgeClass = "badge badge-sm font-semibold ";
+  let text = status;
+
+  switch (status) {
+    case 'HIRED':
+    case 'hired':
+      badgeClass += "badge-info badge-outline";
+      text = "HIRED";
+      break;
+    case 'OFFER_SENT':
+      badgeClass += "badge-warning text-white";
+      text = "OFFER SENT";
+      break;
+    case 'OFFER_ACCEPTED':
+      badgeClass += "badge-success text-white";
+      text = "ACCEPTED";
+      break;
+    case 'OFFER_REJECTED':
+      badgeClass += "badge-error text-white";
+      text = "REJECTED";
+      break;
+    default:
+      badgeClass += "badge-ghost";
+  }
+
+  return <span className={badgeClass}>{text}</span>;
+}
+
 const ActionButton = ({ action, applicationId, onAction }) => {
-  let btnClass = 'btn btn-sm capitalize ';
+  let btnClass = 'btn btn-xs capitalize ';
   switch (action) {
     case 'hire':
       btnClass += 'btn-success text-white';

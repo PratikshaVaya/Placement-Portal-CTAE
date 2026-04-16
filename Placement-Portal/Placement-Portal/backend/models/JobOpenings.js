@@ -259,8 +259,8 @@ const JobOpeningSchema = new mongoose.Schema(
     },
 
     receivingBatch: {
-      type: BatchSchema,
-      required: [true, 'Receving Batch is required!'],
+      type: [BatchSchema],
+      required: [true, 'Receiving Batch is required!'],
     },
 
     receivingDepartments: {

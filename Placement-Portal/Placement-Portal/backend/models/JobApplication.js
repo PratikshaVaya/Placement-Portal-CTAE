@@ -27,16 +27,18 @@ const JobApplicationSchema = new mongoose.Schema(
       ref: 'Company',
     },
 
-    applicationStatus: {
+    status: {
       type: String,
-      enum: ['pending', 'shortlisted', 'hired', 'rejected'],
-      default: 'pending',
-    },
-
-    offerStatus: {
-      type: String,
-      enum: ['pending', 'accepted', 'rejected'],
-      default: 'pending',
+      enum: [
+        'APPLIED',
+        'SHORTLISTED',
+        'REJECTED',
+        'HIRED',
+        'OFFER_SENT',
+        'OFFER_ACCEPTED',
+        'OFFER_REJECTED',
+      ],
+      default: 'APPLIED',
     },
 
     portfolio: {

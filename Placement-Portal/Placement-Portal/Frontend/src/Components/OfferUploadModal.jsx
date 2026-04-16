@@ -24,6 +24,7 @@ const OfferUploadModal = ({ applicationId, onClose }) => {
       toast.success('Offer letter uploaded successfully!');
       queryClient.invalidateQueries({ queryKey: ['offer-details', applicationId] });
       queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['single-job-applications'] });
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       onClose();
@@ -69,7 +70,7 @@ const OfferUploadModal = ({ applicationId, onClose }) => {
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
         <h2 className="text-2xl font-bold mb-4">Upload Offer Letter</h2>
 
-        {offer?.status === 'accepted' ? (
+        {offer?.status === 'OFFER_ACCEPTED' || offer?.status === 'accepted' ? (
           <>
             <div className="mb-4">
               <p className="text-gray-600 mb-4">

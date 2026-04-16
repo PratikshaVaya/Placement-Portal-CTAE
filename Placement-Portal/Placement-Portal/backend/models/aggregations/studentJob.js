@@ -1,33 +1,41 @@
 const mongoose = require('mongoose');
 
-function studentJobOpeningsAgg({ courseId, batchId, departmentId, userId }) {
-  userId = new mongoose.Types.ObjectId(userId);
-  courseId = new mongoose.Types.ObjectId(courseId);
-  batchId = new mongoose.Types.ObjectId(batchId);
-  departmentId = new mongoose.Types.ObjectId(departmentId);
+const studentJobOpeningsAgg = ({ batchId, courseId, departmentId, userId }) => {
+  const userObjId = new mongoose.Types.ObjectId(userId);
+  const courseObjId = new mongoose.Types.ObjectId(courseId);
+  const batchObjId = new mongoose.Types.ObjectId(batchId);
+  const deptObjId = new mongoose.Types.ObjectId(departmentId);
 
   return [
     {
       $match: {
-        'receivingCourse.id': courseId,
-        'receivingBatch.id': batchId,
-        'receivingDepartments.id': departmentId,
         status: 'open',
-        deadline: {
-          $gte: new Date(),
-        },
-        applicants: {
-          $nin: [userId],
-        },
-        shortlistedCandidates: {
-          $nin: [userId],
-        },
-        selectedCandidates: {
-          $nin: [userId],
-        },
-        rejectedCandidates: {
-          $nin: [userId],
-        },
+        deadline: { $gte: new Date() },
+        applicants: { $nin: [userObjId] },
+        shortlistedCandidates: { $nin: [userObjId] },
+        selectedCandidates: { $nin: [userObjId] },
+        rejectedCandidates: { $nin: [userObjId] },
+        // Targeting Logic
+        // Targeting Logic
+        'receivingCourses.id': courseObjId,
+        $and: [
+          {
+            $or: [
+              { receivingBatch: { $exists: false } },
+              { receivingBatch: { $size: 0 } },
+              { 'receivingBatch.id': batchObjId },
+              { receivingBatch: batchObjId } // Legacy handling
+            ]
+          },
+          {
+            $or: [
+              { receivingDepartments: { $exists: false } },
+              { receivingDepartments: { $size: 0 } },
+              { 'receivingDepartments.id': deptObjId },
+              { receivingDepartments: deptObjId } // Legacy handling
+            ]
+          }
+        ]
       },
     },
     {
@@ -75,6 +83,7 @@ function studentJobsByStatusAgg({ userId, status }) {
       jobExclude['jobsShortlisted'] = 0;
       break;
     case 'hired':
+    case 'HIRED':
       jobPath = 'jobsSelected';
       jobInclude['jobsSelected'] = 1;
       jobExclude['jobsSelected'] = 0;
@@ -148,34 +157,50 @@ function singleJobStudentAgg({
     {
       $match: {
         _id: jobId,
-        'receivingCourse.id': courseId,
-        'receivingBatch.id': batchId,
-        'receivingDepartments.id': departmentId,
+        'receivingCourses.id': courseId,
+        $and: [
+          {
+            $or: [
+              { receivingBatch: { $exists: false } },
+              { receivingBatch: { $size: 0 } },
+              { 'receivingBatch.id': batchId },
+              { receivingBatch: batchId }
+            ]
+          },
+          {
+            $or: [
+              { receivingDepartments: { $exists: false } },
+              { receivingDepartments: { $size: 0 } },
+              { 'receivingDepartments.id': departmentId },
+              { receivingDepartments: departmentId }
+            ]
+          }
+        ]
       },
     },
     {
       $addFields: {
         applicationsCount: {
-          $size: '$applications',
+          $size: { $ifNull: ['$applications', []] },
         },
         applicationStatus: {
           $switch: {
             branches: [
-              { case: { $in: [userId, '$applicants'] }, then: 'applied' },
+              { case: { $in: [userId, { $ifNull: ['$applicants', []] }] }, then: 'APPLIED' },
               {
-                case: { $in: [userId, '$shortlistedCandidates'] },
-                then: 'shortlisted',
+                case: { $in: [userId, { $ifNull: ['$shortlistedCandidates', []] }] },
+                then: 'SHORTLISTED',
               },
               {
-                case: { $in: [userId, '$rejectedCandidates'] },
-                then: 'rejected',
+                case: { $in: [userId, { $ifNull: ['$rejectedCandidates', []] }] },
+                then: 'REJECTED',
               },
               {
-                case: { $in: [userId, '$selectedCandidates'] },
-                then: 'hired',
+                case: { $in: [userId, { $ifNull: ['$selectedCandidates', []] }] },
+                then: 'HIRED',
               },
             ],
-            default: 'not applied',
+            default: 'NOT_APPLIED',
           },
         },
       },
@@ -208,7 +233,7 @@ function companyInchargeJobsAgg({ companyId, status }) {
     {
       $addFields: {
         applicationsCount: {
-          $size: '$applications',
+          $size: { $ifNull: ['$applications', []] },
         },
       },
     },
@@ -219,16 +244,6 @@ function companyInchargeJobsAgg({ companyId, status }) {
         shortlistedCandidates: 0,
         rejectedCandidates: 0,
         selectedCandidates: 0,
-        status: 0,
-        description: 0,
-        // profile: 1,
-        // company: 1,
-        // location: 1,
-        // jobPackage: 1,
-        // keySkills: 1,
-        // deadline: 1,
-        // postedBy: 1,
-        // applicationsCount: 1,
       },
     },
     {
@@ -253,7 +268,7 @@ function singleJobCompanyAgg({ companyId, jobId }) {
     {
       $addFields: {
         applicationsCount: {
-          $size: '$applications',
+          $size: { $ifNull: ['$applications', []] },
         },
       },
     },

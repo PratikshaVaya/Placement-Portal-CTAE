@@ -168,7 +168,7 @@ function jobApplicationsAgg({ companyId }) {
               coverLetter: 1,
               resume: 1,
               portfolio: 1,
-              applicationStatus: 1,
+              status: 1,
               appliedAt: '$createdAt',
               applicantCGPA: {
                 $cond: [
@@ -209,7 +209,7 @@ function jobApplicationsAgg({ companyId }) {
           },
           {
             $group: {
-              _id: { status: '$applicationStatus' },
+              _id: { status: '$status' },
               applications: {
                 $push: '$$ROOT',
               },
@@ -313,7 +313,7 @@ function jobApplicationsAggWithFilters({ companyId, filters = {} }) {
               coverLetter: 1,
               resume: 1,
               portfolio: 1,
-              applicationStatus: 1,
+              status: 1,
               appliedAt: '$createdAt',
               applicantCGPA: {
                 $cond: [
@@ -358,7 +358,7 @@ function jobApplicationsAggWithFilters({ companyId, filters = {} }) {
           ...(Object.keys(sortOrder).length > 0 ? [{ $sort: sortOrder }] : []),
           {
             $group: {
-              _id: { status: '$applicationStatus' },
+              _id: { status: '$status' },
               applications: {
                 $push: '$$ROOT',
               },
@@ -422,8 +422,7 @@ function singleJobApplicationsAgg({ jobId, companyId }) {
               coverLetter: 1,
               resume: 1,
               portfolio: 1,
-              applicationStatus: 1,
-              offerStatus: 1,
+              status: 1,
               offerLetterUrl: 1,
             },
           },
@@ -442,7 +441,7 @@ function singleJobApplicationsAgg({ jobId, companyId }) {
           },
           {
             $group: {
-              _id: { status: '$applicationStatus' },
+              _id: { status: '$status' },
               applications: {
                 $push: '$$ROOT',
               },
@@ -468,8 +467,7 @@ function studentJobApplicationsAgg({ applicantId }) {
         resume: 1,
         coverLetter: 1,
         jobId: 1,
-        applicationStatus: 1,
-        offerStatus: 1,
+        status: 1,
       },
     },
     {
@@ -493,7 +491,7 @@ function studentJobApplicationsAgg({ applicantId }) {
     },
     {
       $group: {
-        _id: { status: '$applicationStatus' },
+        _id: { status: '$status' },
         application: {
           $push: '$$ROOT',
         },

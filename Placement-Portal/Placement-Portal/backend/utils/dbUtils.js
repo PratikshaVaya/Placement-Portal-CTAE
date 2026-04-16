@@ -14,18 +14,31 @@ function validateModelDoc(doc, message) {
 
 async function validateJobReceivers({
   receivingCourses,
-  receivingBatch,
+  receivingBatches,
   receivingDepartments,
 }) {
-  if (
-    !Array.isArray(receivingCourses) ||
-    !receivingCourses.length ||
-    !receivingBatch?.trim() ||
-    !Array.isArray(receivingDepartments) ||
-    !receivingDepartments.length
-  ) {
-    throw new CustomAPIError.BadRequestError('Invalid job receivers!');
-  }
+  // Normalize inputs to arrays
+  receivingCourses = Array.isArray(receivingCourses)
+    ? receivingCourses
+    : receivingCourses
+    ? [receivingCourses]
+    : [];
+  receivingBatches = Array.isArray(receivingBatches)
+    ? receivingBatches
+    : receivingBatches
+    ? [receivingBatches]
+    : [];
+  receivingDepartments = Array.isArray(receivingDepartments)
+    ? receivingDepartments
+    : receivingDepartments
+    ? [receivingDepartments]
+    : [];
+
+  if (receivingCourses.length === 0)
+    throw new CustomAPIError.BadRequestError('Courses are required!');
+
+  if (receivingBatches.length === 0)
+    throw new CustomAPIError.BadRequestError('Batches are required!');
 
   const courses = [];
   const allAvailableDepartments = new Map();
@@ -38,37 +51,45 @@ async function validateJobReceivers({
         `Invalid course provided with id: ${courseId}`
       );
     }
-    courses.push({ id: course._id, courseName: course.courseName });
+    courses.push({ 
+      id: course._id, 
+      courseName: course.courseName.trim().toLowerCase() 
+    });
     
     // Collect all departments and batches from this course
     course.departments.forEach((dept, id) => allAvailableDepartments.set(id, dept));
     course.batches.forEach((batch, id) => allAvailableBatches.set(id, batch));
   }
 
-  // Use the first course to validate the batch (or ensure it exists in the pool)
-  const batch = allAvailableBatches.get(receivingBatch);
-  if (!batch)
-    throw new CustomAPIError.BadRequestError(
-      `Invalid batch provided with id: ${receivingBatch}`
-    );
+  const batches = [];
+  for (let batchId of receivingBatches) {
+    const batch = allAvailableBatches.get(batchId);
+    if (!batch)
+      throw new CustomAPIError.BadRequestError(
+        `Invalid batch provided with id: ${batchId}`
+      );
+    batches.push({ id: batch._id, batchYear: batch.batchYear });
+  }
 
   const departments = [];
-
-  for (let receivingDepartment of receivingDepartments) {
-    const department = allAvailableDepartments.get(receivingDepartment);
-    if (!department)
-      throw new CustomAPIError.BadRequestError(
-        `Invalid department provided with id: ${receivingDepartment}`
-      );
-    departments.push({
-      id: department._id,
-      departmentName: department.departmentName,
-    });
+  // If receivingDepartments is provided and not empty, validate each
+  if (Array.isArray(receivingDepartments) && receivingDepartments.length > 0) {
+    for (let receivingDepartment of receivingDepartments) {
+      const department = allAvailableDepartments.get(receivingDepartment);
+      if (!department)
+        throw new CustomAPIError.BadRequestError(
+          `Invalid department provided with id: ${receivingDepartment}`
+        );
+      departments.push({
+        id: department._id,
+        departmentName: department.departmentName.trim().toLowerCase(),
+      });
+    }
   }
 
   return {
     courses,
-    batch: { id: batch._id, batchYear: batch.batchYear },
+    batches,
     departments,
   };
 }
@@ -109,9 +130,9 @@ async function validateStudentCourse({
     : course.regularSemestersCount;
 
   return {
-    courseName: course.courseName,
+    courseName: course.courseName.trim().toLowerCase(),
     courseLevel: course.courseLevel,
-    departmentName: department.departmentName,
+    departmentName: department.departmentName.trim().toLowerCase(),
     batchYear: batch.batchYear,
     yearsCount,
     semestersCount,

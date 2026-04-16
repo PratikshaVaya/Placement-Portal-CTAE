@@ -102,7 +102,9 @@ const SingleJob = () => {
   } = job;
 
   const hasOfferState =
-    role === 'student' && hiredStatus && hiredStatus !== 'none';
+    role === 'student' && 
+    hiredStatus && 
+    ['OFFER_ACCEPTED', 'OFFER_REJECTED'].includes(hiredStatus);
 
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
@@ -114,29 +116,27 @@ const SingleJob = () => {
         <div className="flex gap-x-4">
           <h3 className="font-semibold tracking-wide text-2xl">{profile}</h3>
           {role == 'student' &&
-            (applicationStatus == 'applied' ? (
+            (applicationStatus == 'APPLIED' ? (
               <button className="w-fit self-center text-white btn btn-sm btn-info">
                 Applied
               </button>
-            ) : applicationStatus == 'hired' ? (
+            ) : applicationStatus == 'HIRED' || applicationStatus == 'OFFER_SENT' || applicationStatus == 'OFFER_ACCEPTED' ? (
               <button className="w-fit self-center text-white btn btn-sm btn-success">
-                Hired
+                Hired / Offer Received
               </button>
-            ) : applicationStatus == 'rejected' ? (
+            ) : applicationStatus == 'REJECTED' || applicationStatus == 'OFFER_REJECTED' ? (
               <button className=" w-fit self-center btn btn-sm btn-error">
                 Rejected
               </button>
-            ) : applicationStatus == 'shortlisted' ? (
+            ) : applicationStatus == 'SHORTLISTED' ? (
               <button className=" w-fit self-center btn btn-sm btn-warning">
                 Shortlisted
               </button>
             ) : hasOfferState ? (
-              <button className="w-fit self-center btn btn-sm btn-error btn-disabled opacity-50" disabled>
-                {hiredStatus === 'accepted'
-                  ? 'Hired & Accepted'
-                  : hiredStatus === 'rejected'
-                    ? 'Offer Rejected'
-                    : 'Hiring Pending'}
+              <button className="w-fit self-center btn btn-sm btn-info btn-disabled opacity-60 font-bold" disabled>
+                {hiredStatus === 'OFFER_ACCEPTED'
+                  ? 'OFFER FINALIZED ✅'
+                  : 'OFFER FINALIZED ❌'}
               </button>
             ) : (
               <button
@@ -238,7 +238,9 @@ const SingleJob = () => {
               </div>
               <div>
                 <span className="font-medium">Receiving Batch:</span>{' '}
-                {job?.receivingBatch?.batchYear}
+                {Array.isArray(job?.receivingBatch) 
+                  ? job.receivingBatch.map(b => b.batchYear).join(', ')
+                  : job?.receivingBatch?.batchYear || 'N/A'}
               </div>
               <div>
                 <span className="font-medium">Receiving Departments:</span>{' '}

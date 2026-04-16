@@ -138,6 +138,26 @@ const SingleJob = ({ job, status, role }) => {
         </div>
       )}
 
+      {role === 'student' && eligibilityStatus && (
+        <div className={`p-3 rounded-lg border text-sm mt-2 ${eligibilityStatus.isEligible ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+          <div className="flex justify-between items-center mb-1">
+            <span className="font-bold flex items-center gap-1">
+              {eligibilityStatus.isEligible ? '✅ Eligible' : '❌ Not Eligible'}
+            </span>
+            <span className="badge badge-sm badge-ghost opacity-70">
+              {eligibilityStatus.matchCount}/{eligibilityStatus.totalCriteria} Criteria Met
+            </span>
+          </div>
+          {!eligibilityStatus.isEligible && eligibilityStatus.reasons?.length > 0 && (
+            <ul className="list-disc list-inside text-xs mt-1 space-y-0.5 text-red-700">
+              {eligibilityStatus.reasons.map((reason, idx) => (
+                <li key={idx} className="overflow-hidden text-ellipsis whitespace-nowrap" title={reason}>{reason}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       <Link
         className="btn btn-sm btn-success text-white w-fit self-center hover:scale-110 mt-2"
         to={`${_id}`}
@@ -161,9 +181,9 @@ const SingleJob = ({ job, status, role }) => {
           <button className=" w-fit self-center btn btn-sm btn-warning">
             Shortlisted
           </button>
-        ) : hiredStatus !== 'none' ? (
-          <button className="w-fit self-center btn btn-sm btn-error btn-disabled opacity-50" disabled>
-            {hiredStatus === 'accepted' ? 'Hired & Accepted' : hiredStatus === 'rejected' ? 'Hired (Rejected)' : 'Hiring Pending'}
+        ) : (['OFFER_ACCEPTED', 'OFFER_REJECTED'].includes(hiredStatus)) ? (
+          <button className="w-fit self-center btn btn-sm btn-info btn-disabled opacity-60 font-bold" disabled>
+            {hiredStatus === 'OFFER_ACCEPTED' ? 'OFFER FINALIZED ✅' : 'OFFER FINALIZED ❌'}
           </button>
         ) : isNotEligible ? (
           <button className="w-fit self-center btn btn-sm btn-error btn-disabled opacity-50" disabled>

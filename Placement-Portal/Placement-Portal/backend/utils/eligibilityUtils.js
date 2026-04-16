@@ -4,143 +4,88 @@
  * @param {Object} eligibilityCriteria - Job's eligibility criteria
  * @param {Object} studentPersonal - Student's personal data (for DOB)
  * @param {Object} student - Student user data (for backlogs)
- * @returns {Object} - { isEligible: boolean, reasons: [] }
+ * @returns {Object} - { isEligible: boolean, reasons: [], matchCount: number, totalCriteria: number }
  */
 const checkAcademicEligibility = (
   studentEducation,
-  eligibilityCriteria,
+  eligibilityCriteria = {},
   studentPersonal = null,
   student = null
 ) => {
   const reasons = [];
+  let matchCount = 0;
+  let totalCriteria = 0;
 
-  if (!eligibilityCriteria || Object.keys(eligibilityCriteria).length === 0) {
-    return { isEligible: true, reasons: [] };
-  }
+  // Criteria fields to check
+  const criteriaMap = [
+    { key: 'tenthPercentage', label: '10th %', value: studentEducation?.highschool?.score },
+    { key: 'twelfthPercentage', label: '12th %', value: studentEducation?.intermediate?.score },
+    { key: 'graduationPercentage', label: 'Graduation %', value: studentEducation?.graduation?.aggregateGPA ? studentEducation.graduation.aggregateGPA * 10 : null },
+    { key: 'graduationCGPA', label: 'Graduation CGPA', value: studentEducation?.graduation?.aggregateGPA },
+    { key: 'maxActiveBacklogs', label: 'Active Backlogs', value: student?.activeBacklogs },
+    { key: 'maxCompletedBacklogs', label: 'Completed Backlogs', value: student?.completedBacklogs },
+  ];
 
-  if (!studentEducation) {
-    return {
-      isEligible: false,
-      reasons: ['Your education details are incomplete. Please complete your profile.'],
-    };
-  }
-
-  const isLateral = !!studentEducation?.isLateralEntry;
-
-  // 1. Check 10th percentage (Applies to ALL)
-  if (eligibilityCriteria.tenthPercentage !== undefined && eligibilityCriteria.tenthPercentage !== null) {
-    if (!studentEducation?.highschool?.score) {
-      reasons.push(
-        `Your 10th marks data is missing. Required: ${eligibilityCriteria.tenthPercentage}%`
-      );
-    } else if (studentEducation.highschool.score < eligibilityCriteria.tenthPercentage) {
-      reasons.push(
-        `Your 10th mark (${studentEducation.highschool.score}%) is below the required ${eligibilityCriteria.tenthPercentage}%`
-      );
-    }
-  }
-
-  // 2. Check 12th percentage (Only for REGULAR students)
-  if (!isLateral && eligibilityCriteria.twelfthPercentage !== undefined && eligibilityCriteria.twelfthPercentage !== null) {
-    if (!studentEducation?.intermediate?.score) {
-      reasons.push(
-        `Your 12th marks data is missing. Required: ${eligibilityCriteria.twelfthPercentage}%`
-      );
-    } else if (
-      studentEducation.intermediate.score <
-      eligibilityCriteria.twelfthPercentage
-    ) {
-      reasons.push(
-        `Your 12th mark (${studentEducation.intermediate.score}%) is below the required ${eligibilityCriteria.twelfthPercentage}%`
-      );
-    }
-  }
-
-  // 3. Check Diploma percentage (Only for LATERAL entry students)
-  if (isLateral && eligibilityCriteria.diplomaPercentage !== undefined && eligibilityCriteria.diplomaPercentage !== null) {
-    if (!studentEducation?.diploma?.score) {
-      reasons.push(
-        `Your Diploma marks data is missing. Required: ${eligibilityCriteria.diplomaPercentage}%`
-      );
-    } else if (studentEducation.diploma.score < eligibilityCriteria.diplomaPercentage) {
-      reasons.push(
-        `Your Diploma mark (${studentEducation.diploma.score}%) is below the required ${eligibilityCriteria.diplomaPercentage}%`
-      );
-    }
-  }
-
-  // 4. Check Graduation percentage/CGPA (Applies to ALL)
-  if (eligibilityCriteria.graduationPercentage || eligibilityCriteria.graduationCGPA) {
-    if (studentEducation?.graduation?.aggregateGPA === undefined || studentEducation?.graduation?.aggregateGPA === null) {
-      if (eligibilityCriteria.graduationPercentage) {
-        reasons.push(
-          `Your graduation percentage data is missing. Required: ${eligibilityCriteria.graduationPercentage}%`
-        );
-      }
-      if (eligibilityCriteria.graduationCGPA) {
-        reasons.push(
-          `Your graduation CGPA data is missing. Required: ${eligibilityCriteria.graduationCGPA}`
-        );
+  // 1. Diploma (SPECIAL CASE)
+  if (eligibilityCriteria.diplomaPercentage != null) {
+    totalCriteria++;
+    const isDiplomaStudent = student?.isLateralEntry || studentEducation?.diploma?.score != null;
+    
+    if (isDiplomaStudent) {
+      const studentScore = studentEducation?.diploma?.score;
+      if (studentScore == null) {
+        reasons.push("Missing diploma marks in your profile");
+      } else if (studentScore < eligibilityCriteria.diplomaPercentage) {
+        reasons.push(`Diploma marks (${studentScore}%) below required ${eligibilityCriteria.diplomaPercentage}%`);
+      } else {
+        matchCount++;
       }
     } else {
-      const gpa = studentEducation.graduation.aggregateGPA;
+      // Not a diploma student, so skip this criteria (auto-match)
+      matchCount++;
+    }
+  }
 
-      if (eligibilityCriteria.graduationPercentage) {
-        // Convert CGPA to percentage (Assuming CGPA * 10)
-        const studentGradPercentage = gpa * 10;
-        if (studentGradPercentage < eligibilityCriteria.graduationPercentage) {
-          reasons.push(
-            `Your graduation percentage (${studentGradPercentage.toFixed(2)}%) is below the required ${eligibilityCriteria.graduationPercentage}%`
-          );
+  // 2. Percentages & CGPA & Backlogs
+  criteriaMap.forEach(({ key, label, value }) => {
+    const threshold = eligibilityCriteria[key];
+    if (threshold != null) {
+      totalCriteria++;
+      if (value == null) {
+        reasons.push(`${label} data missing in your profile`);
+      } else {
+        if (key.startsWith('max')) {
+          // Backlogs: Reject if value > threshold
+          if (value > threshold) {
+            reasons.push(`${label} (${value}) exceeds limit (${threshold})`);
+          } else {
+            matchCount++;
+          }
+        } else {
+          // Percentages/CGPA: Reject if value < threshold
+          if (value < threshold) {
+            reasons.push(`${label} (${value}${key.includes('Percentage') ? '%' : ''}) below required ${threshold}${key.includes('Percentage') ? '%' : ''}`);
+          } else {
+            matchCount++;
+          }
         }
       }
-
-      if (eligibilityCriteria.graduationCGPA) {
-        if (gpa < eligibilityCriteria.graduationCGPA) {
-          reasons.push(
-            `Your graduation CGPA (${gpa.toFixed(2)}) is below the required ${eligibilityCriteria.graduationCGPA}`
-          );
-        }
-      }
     }
-  }
+  });
 
-  // 5. Check active backlogs
-  if (eligibilityCriteria.maxActiveBacklogs !== undefined && eligibilityCriteria.maxActiveBacklogs !== null) {
-    const activeBacklogs = student?.activeBacklogs ?? 0;
-    if (activeBacklogs > eligibilityCriteria.maxActiveBacklogs) {
-      reasons.push(
-        `Your active backlogs (${activeBacklogs}) exceed the allowed limit (${eligibilityCriteria.maxActiveBacklogs})`
-      );
-    }
-  }
-
-  // 6. Check completed backlogs
-  if (eligibilityCriteria.maxCompletedBacklogs !== undefined && eligibilityCriteria.maxCompletedBacklogs !== null) {
-    const completedBacklogs = student?.completedBacklogs ?? 0;
-    if (completedBacklogs > eligibilityCriteria.maxCompletedBacklogs) {
-      reasons.push(
-        `Your completed backlogs (${completedBacklogs}) exceed the allowed limit (${eligibilityCriteria.maxCompletedBacklogs})`
-      );
-    }
-  }
-
-  // 7. Check DOB / Age eligibility
+  // 3. DOB
   if (eligibilityCriteria.maxDOB) {
+    totalCriteria++;
     if (!studentPersonal?.dateOfBirth) {
-      reasons.push(
-        'Your date of birth is missing. Please update your personal details.'
-      );
+      reasons.push("Date of Birth missing in your profile");
     } else {
       const studentDOB = new Date(studentPersonal.dateOfBirth);
       const maxDOB = new Date(eligibilityCriteria.maxDOB);
-
+      // student.dob <= required date (must be older/at least as old as the maxDOB)
       if (studentDOB > maxDOB) {
-        const age = Math.floor((new Date() - studentDOB) / (365.25 * 24 * 60 * 60 * 1000));
-        const requiredAge = Math.floor((new Date() - maxDOB) / (365.25 * 24 * 60 * 60 * 1000));
-        reasons.push(
-          `Your age (${age} years) is below the required age for this role.`
-        );
+        reasons.push(`Birth date must be on or before ${maxDOB.toLocaleDateString()}`);
+      } else {
+        matchCount++;
       }
     }
   }
@@ -148,6 +93,8 @@ const checkAcademicEligibility = (
   return {
     isEligible: reasons.length === 0,
     reasons,
+    matchCount,
+    totalCriteria,
   };
 };
 

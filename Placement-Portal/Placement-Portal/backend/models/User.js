@@ -234,7 +234,7 @@ const UserSchema = new mongoose.Schema(
     // hiring and offer management
     hiredStatus: {
       type: String,
-      enum: ['none', 'pending_offer', 'accepted', 'rejected'],
+      enum: ['none', 'HIRED', 'OFFER_SENT', 'OFFER_ACCEPTED', 'OFFER_REJECTED'],
       default: 'none',
     },
 

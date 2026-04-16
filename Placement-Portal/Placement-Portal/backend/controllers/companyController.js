@@ -1,7 +1,6 @@
 const JobOpeningModel = require('../models/JobOpenings');
 const CompanyModel = require('../models/Company');
 const JobApplicationModel = require('../models/JobApplication');
-const OfferModel = require('../models/Offer');
 const mongoose = require('mongoose');
 
 const { StatusCodes } = require('http-status-codes');
@@ -30,6 +29,7 @@ const createJobOpening = async (req, res) => {
     jobPackage,
     receivingCourses,
     receivingBatch,
+    receivingBatches,
     receivingDepartments,
     keySkills,
     openingsCount,
@@ -64,68 +64,9 @@ const createJobOpening = async (req, res) => {
       'Not allowed to access this resource'
     );
 
-  // Validate eligibility criteria if filter is enabled
-  if (enableEligibilityFilter === 'true' || enableEligibilityFilter === true) {
-    const hasCriteria =
-      tenthPercentage ||
-      twelfthPercentage ||
-      diplomaPercentage ||
-      graduationPercentage ||
-      graduationCGPA ||
-      maxActiveBacklogs ||
-      maxCompletedBacklogs ||
-      maxDOB;
-    
-    if (!hasCriteria) {
-      throw new CustomAPIError.BadRequestError(
-        'Please set at least one eligibility criterion!'
-      );
-    }
-
-    // Validate percentage and CGPA values
-    const validatePercentage = (val) => {
-      if (!val && val !== 0) return true;
-      const num = Number(val);
-      return !isNaN(num) && num >= 0 && num <= 100;
-    };
-
-    const validateCGPA = (val) => {
-      if (!val && val !== 0) return true;
-      const num = Number(val);
-      return !isNaN(num) && num >= 0 && num <= 10;
-    };
-
-    const validateBacklogs = (val) => {
-      if (!val && val !== 0) return true;
-      const num = Number(val);
-      return !isNaN(num) && num >= 0;
-    };
-
-    const validateDate = (val) => {
-      if (!val) return true;
-      const dateValue = new Date(val);
-      return !Number.isNaN(dateValue.getTime());
-    };
-
-    if (
-      !validatePercentage(tenthPercentage) ||
-      !validatePercentage(twelfthPercentage) ||
-      !validatePercentage(diplomaPercentage) ||
-      !validatePercentage(graduationPercentage) ||
-      !validateCGPA(graduationCGPA) ||
-      !validateBacklogs(maxActiveBacklogs) ||
-      !validateBacklogs(maxCompletedBacklogs) ||
-      !validateDate(maxDOB)
-    ) {
-      throw new CustomAPIError.BadRequestError(
-        'Invalid eligibility criteria values. Percentages must be 0-100, CGPA must be 0-10, backlogs must be non-negative, and date of birth must be valid.'
-      );
-    }
-  }
-
   const { courses, batch, departments } = await validateJobReceivers({
     receivingCourses,
-    receivingBatch,
+    receivingBatches: receivingBatches || (receivingBatch ? [receivingBatch] : []),
     receivingDepartments,
   });
 
@@ -137,19 +78,13 @@ const createJobOpening = async (req, res) => {
           diplomaPercentage: diplomaPercentage ? Number(diplomaPercentage) : null,
           graduationPercentage: graduationPercentage ? Number(graduationPercentage) : null,
           graduationCGPA: graduationCGPA ? Number(graduationCGPA) : null,
-          maxActiveBacklogs: maxActiveBacklogs !== undefined ? Number(maxActiveBacklogs) : null,
-          maxCompletedBacklogs: maxCompletedBacklogs !== undefined ? Number(maxCompletedBacklogs) : null,
+          maxActiveBacklogs: maxActiveBacklogs !== undefined && maxActiveBacklogs !== '' ? Number(maxActiveBacklogs) : null,
+          maxCompletedBacklogs: maxCompletedBacklogs !== undefined && maxCompletedBacklogs !== '' ? Number(maxCompletedBacklogs) : null,
           maxDOB: maxDOB ? new Date(maxDOB) : null,
         }
       : {};
 
   const openingsCountValue = Number(openingsCount);
-  if (Number.isNaN(openingsCountValue) || openingsCountValue < 1) {
-    throw new CustomAPIError.BadRequestError(
-      'Opening Count must be a number greater than 0'
-    );
-  }
-
   const jobOpening = await JobOpeningModel.create({
     profile,
     description,
@@ -181,22 +116,9 @@ const createJobOpening = async (req, res) => {
     id: jobOpening._id,
   });
 
-  course.lastJobOpening = jobOpening.createdAt;
-
-  course.batches
-    .get(receivingBatch)
-    .set('lastJobOpening', jobOpening.createdAt);
-
-  for (let receivingDepartment of receivingDepartments) {
-    course.departments
-      .get(receivingDepartment)
-      .set('lastJobOpening', jobOpening.createdAt);
-  }
-  await course.save();
-
   // Increment company stats
   company.jobsPosted = (company.jobsPosted || 0) + 1;
-  company.openingsCreated = (company.openingsCreated || 0) + openingsCountValue;
+  company.openingsCreated = (company.openingsCreated || 0) + (openingsCountValue || 1);
   await company.save();
 };
 
@@ -209,20 +131,9 @@ const getJobsForIncharge = async (req, res) => {
     throw new CustomAPIError.BadRequestError('Invalid status');
   }
 
-  if (!companyId?.trim())
-    throw new CustomAPIError.BadRequestError('Company is required!');
-
   const company = await CompanyModel.findById(companyId);
-
-  if (!company)
-    throw new CustomAPIError.BadRequestError(
-      `No company is found with id: ${companyId}`
-    );
-
   if (!company.admins.includes(userId))
-    throw new CustomAPIError.BadRequestError(
-      `Not allowed to access this resource!`
-    );
+    throw new CustomAPIError.UnauthorizedError(`Not allowed to access this resource!`);
 
   const jobs = await JobOpeningModel.aggregate(
     companyInchargeJobsAgg({ companyId, status })
@@ -239,15 +150,9 @@ const getSingleJob = async (req, res) => {
   const jobId = req?.params?.jobId;
   const companyId = req?.user?.companyId;
 
-  if (!jobId?.trim())
-    throw new CustomAPIError.BadRequestError('Job is required!');
-
   const job = (
     await JobOpeningModel.aggregate(
-      singleJobCompanyAgg({
-        companyId,
-        jobId,
-      })
+      singleJobCompanyAgg({ companyId, jobId })
     )
   )?.[0];
 
@@ -265,254 +170,102 @@ const updateJobOpening = async (req, res) => {
   const jobId = req?.params?.jobId;
   const { userId, companyId } = req.user;
 
-  if (!jobId?.trim())
-    throw new CustomAPIError.BadRequestError('Job Id is required!');
-
-  if (!companyId?.trim())
-    throw new CustomAPIError.BadRequestError('Company is required!');
-
-  const company = await CompanyModel.findById(companyId);
   const companyAdmin = await UserModel.findById(userId);
-
-  if (!company)
-    throw new CustomAPIError.BadRequestError(
-      `No company is found with id: ${companyId}`
-    );
-
   if (companyAdmin.companyId != companyId)
-    throw new CustomAPIError.UnauthorizedError(
-      'Not allowed to access this resource'
-    );
+    throw new CustomAPIError.UnauthorizedError('Not allowed to access this resource');
+
+  const existingJob = await JobOpeningModel.findById(jobId);
+  if (!existingJob) throw new CustomAPIError.NotFoundError(`No job found with id: ${jobId}`);
 
   const {
-    profile,
-    description,
-    location,
-    jobPackage,
-    receivingCourses,
-    receivingBatch,
-    receivingDepartments,
-    keySkills,
-    openingsCount,
-    deadline,
-    cgpaCutoff,
-    enableEligibilityFilter,
-    tenthPercentage,
-    twelfthPercentage,
-    diplomaPercentage,
-    graduationPercentage,
-    graduationCGPA,
-    maxActiveBacklogs,
-    maxCompletedBacklogs,
-    maxDOB,
+    profile, description, location, jobPackage, receivingCourses,
+    receivingBatch, receivingBatches, receivingDepartments, keySkills, openingsCount,
+    deadline, cgpaCutoff, enableEligibilityFilter, tenthPercentage,
+    twelfthPercentage, diplomaPercentage, graduationPercentage,
+    graduationCGPA, maxActiveBacklogs, maxCompletedBacklogs, maxDOB,
   } = req.body;
 
-  // Validate eligibility criteria if filter is enabled
-  if (enableEligibilityFilter === 'true' || enableEligibilityFilter === true) {
-    const hasCriteria =
-      tenthPercentage ||
-      twelfthPercentage ||
-      diplomaPercentage ||
-      graduationPercentage ||
-      graduationCGPA ||
-      maxActiveBacklogs ||
-      maxCompletedBacklogs ||
-      maxDOB;
+  const updateData = {};
+  if (profile !== undefined) updateData.profile = profile;
+  if (description !== undefined) updateData.description = description;
+  if (location !== undefined) updateData.location = location;
+  if (jobPackage !== undefined) updateData.jobPackage = jobPackage;
+  if (keySkills !== undefined) updateData.keySkills = keySkills;
+  if (openingsCount !== undefined) updateData.openingsCount = Number(openingsCount);
+  if (deadline !== undefined) updateData.deadline = deadline;
+  if (cgpaCutoff !== undefined) updateData.cgpaCutoff = cgpaCutoff;
+  if (enableEligibilityFilter !== undefined) updateData.enableEligibilityFilter = enableEligibilityFilter === 'true' || enableEligibilityFilter === true;
 
-    if (!hasCriteria) {
-      throw new CustomAPIError.BadRequestError(
-        'Please set at least one eligibility criterion!'
-      );
-    }
-
-    // Validate percentage and CGPA values
-    const validatePercentage = (val) => {
-      if (!val && val !== 0) return true;
-      const num = Number(val);
-      return !isNaN(num) && num >= 0 && num <= 100;
-    };
-
-    const validateCGPA = (val) => {
-      if (!val && val !== 0) return true;
-      const num = Number(val);
-      return !isNaN(num) && num >= 0 && num <= 10;
-    };
-
-    if (!validatePercentage(tenthPercentage) || !validatePercentage(twelfthPercentage) || 
-        !validatePercentage(diplomaPercentage) || !validatePercentage(graduationPercentage) ||
-        !validateCGPA(graduationCGPA)) {
-      throw new CustomAPIError.BadRequestError(
-        'Invalid eligibility criteria values. Percentages must be 0-100, CGPA must be 0-10.'
-      );
-    }
+  if (receivingCourses || receivingBatch || receivingBatches || receivingDepartments) {
+    const { courses, batch, departments } = await validateJobReceivers({
+      receivingCourses: receivingCourses || 
+        (Array.isArray(existingJob.receivingCourses) 
+          ? existingJob.receivingCourses.map(c => c.id.toString()) 
+          : existingJob.receivingCourses?.id ? [existingJob.receivingCourses.id.toString()] : []),
+      receivingBatches: receivingBatches || (receivingBatch ? [receivingBatch] : null) || 
+        (Array.isArray(existingJob.receivingBatch) 
+          ? existingJob.receivingBatch.map(b => b.id.toString()) 
+          : existingJob.receivingBatch?.id ? [existingJob.receivingBatch.id.toString()] : []),
+      receivingDepartments: receivingDepartments || 
+        (Array.isArray(existingJob.receivingDepartments) 
+          ? existingJob.receivingDepartments.map(d => d.id.toString()) 
+          : existingJob.receivingDepartments?.id ? [existingJob.receivingDepartments.id.toString()] : []),
+    });
+    if (courses) updateData.receivingCourses = courses;
+    if (batch) updateData.receivingBatch = batch;
+    if (departments) updateData.receivingDepartments = departments;
   }
 
-  const { courses, batch, departments } = await validateJobReceivers({
-    receivingCourses,
-    receivingBatch,
-    receivingDepartments,
-  });
+  if (updateData.enableEligibilityFilter || (enableEligibilityFilter === undefined && existingJob.enableEligibilityFilter)) {
+    const ec = { ...existingJob.eligibilityCriteria.toObject() };
+    if (tenthPercentage !== undefined) ec.tenthPercentage = tenthPercentage ? Number(tenthPercentage) : null;
+    if (twelfthPercentage !== undefined) ec.twelfthPercentage = twelfthPercentage ? Number(twelfthPercentage) : null;
+    if (diplomaPercentage !== undefined) ec.diplomaPercentage = diplomaPercentage ? Number(diplomaPercentage) : null;
+    if (graduationPercentage !== undefined) ec.graduationPercentage = graduationPercentage ? Number(graduationPercentage) : null;
+    if (graduationCGPA !== undefined) ec.graduationCGPA = graduationCGPA ? Number(graduationCGPA) : null;
+    if (maxActiveBacklogs !== undefined) ec.maxActiveBacklogs = maxActiveBacklogs !== undefined && maxActiveBacklogs !== '' ? Number(maxActiveBacklogs) : null;
+    if (maxCompletedBacklogs !== undefined) ec.maxCompletedBacklogs = maxCompletedBacklogs !== undefined && maxCompletedBacklogs !== '' ? Number(maxCompletedBacklogs) : null;
+    if (maxDOB !== undefined) ec.maxDOB = maxDOB ? new Date(maxDOB) : null;
+    updateData.eligibilityCriteria = ec;
+  }
 
-  const eligibilityCriteria =
-    enableEligibilityFilter === 'true' || enableEligibilityFilter === true
-      ? {
-          tenthPercentage: tenthPercentage ? Number(tenthPercentage) : null,
-          twelfthPercentage: twelfthPercentage ? Number(twelfthPercentage) : null,
-          diplomaPercentage: diplomaPercentage ? Number(diplomaPercentage) : null,
-          graduationPercentage: graduationPercentage ? Number(graduationPercentage) : null,
-          graduationCGPA: graduationCGPA ? Number(graduationCGPA) : null,
-          maxActiveBacklogs: maxActiveBacklogs !== undefined ? Number(maxActiveBacklogs) : null,
-          maxCompletedBacklogs: maxCompletedBacklogs !== undefined ? Number(maxCompletedBacklogs) : null,
-          maxDOB: maxDOB ? new Date(maxDOB) : null,
-        }
-      : {};
-
-  const jobOpening = await JobOpeningModel.findOneAndUpdate(
-    { _id: jobId, applications: { $size: 0 } },
-    {
-      profile,
-      description,
-      location,
-      company: {
-        id: company._id,
-        name: company.name,
-        website: company.website,
-      },
-      jobPackage,
-      receivingCourses: courses,
-      receivingBatch: batch,
-      receivingDepartments: departments,
-      keySkills,
-      postedBy: {
-        id: companyAdmin._id,
-        name: companyAdmin.name,
-      },
-      openingsCount,
-      deadline,
-      cgpaCutoff,
-      enableEligibilityFilter: enableEligibilityFilter === 'true' || enableEligibilityFilter === true,
-      eligibilityCriteria,
-    },
-    { runValidators: true }
+  const jobOpening = await JobOpeningModel.findByIdAndUpdate(
+    jobId, { $set: updateData }, { new: true, runValidators: true }
   );
 
-  if (!jobOpening) {
-    throw new CustomAPIError.NotFoundError(`Invalid job id: ${jobId}!`);
-  }
-
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'Updated Job Opening',
-    id: jobOpening._id,
-  });
+  res.status(StatusCodes.OK).json({ success: true, message: 'Updated Job Opening', job: jobOpening });
 };
 
 const deleteJobOpening = async (req, res) => {
   const jobId = req?.params?.jobId;
-  if (!jobId?.trim())
-    throw new CustomAPIError.BadRequestError('Job Id is required!');
-
-  const job = await JobOpeningModel.findOneAndDelete({
-    _id: jobId,
-    applications: { $size: 0 },
-  });
-
-  if (!job) throw new CustomAPIError.NotFoundError(`Invalid job id: ${jobId}`);
-
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'Job Deleted successfully!',
-  });
+  const job = await JobOpeningModel.findOneAndDelete({ _id: jobId, applications: { $size: 0 } });
+  if (!job) throw new CustomAPIError.NotFoundError('Invalid job id or job has applications!');
+  res.status(StatusCodes.OK).json({ success: true, message: 'Job Deleted successfully!' });
 };
 
 const getJobApplications = async (req, res) => {
   const companyId = req.user.companyId;
-  
-  // Parse query parameters for filters
   const filters = {};
-  
-  if (req.query.search) {
-    filters.search = req.query.search.trim();
-  }
-  
-  if (req.query.status) {
-    filters.status = req.query.status;
-  }
-  
-  if (req.query.minCGPA) {
-    filters.minCGPA = parseFloat(req.query.minCGPA);
-  }
-  
-  if (req.query.min10thPercentage) {
-    filters.min10thPercentage = parseFloat(req.query.min10thPercentage);
-  }
-  
-  if (req.query.min12thPercentage) {
-    filters.min12thPercentage = parseFloat(req.query.min12thPercentage);
-  }
-  
-  if (req.query.minGraduationPercentage) {
-    filters.minGraduationPercentage = parseFloat(req.query.minGraduationPercentage);
-  }
-  
-  if (req.query.hasResume !== undefined) {
-    filters.hasResume = req.query.hasResume === 'true';
-  }
-  
-  if (req.query.branch) {
-    filters.branch = req.query.branch;
-  }
-  
-  if (req.query.skills) {
-    filters.skills = Array.isArray(req.query.skills) 
-      ? req.query.skills 
-      : [req.query.skills];
-  }
-  
-  if (req.query.sortBy) {
-    filters.sortBy = req.query.sortBy;
-  }
-  
-  // Use filter-aware aggregation if filters are provided, otherwise use standard aggregation
-  const hasFilters = Object.keys(filters).length > 0;
-  const aggregationPipeline = hasFilters
+  [ 'search', 'status', 'minCGPA', 'min10thPercentage', 'min12thPercentage', 'minGraduationPercentage', 'branch', 'sortBy' ].forEach(key => {
+    if (req.query[key]) filters[key] = req.query[key];
+  });
+  if (req.query.hasResume !== undefined) filters.hasResume = req.query.hasResume === 'true';
+  if (req.query.skills) filters.skills = Array.isArray(req.query.skills) ? req.query.skills : [req.query.skills];
+
+  const aggregationPipeline = Object.keys(filters).length > 0
     ? jobApplicationsAggWithFilters({ companyId, filters })
     : jobApplicationsAgg({ companyId });
 
-  const jobsWithApplications = await JobOpeningModel.aggregate(
-    aggregationPipeline
-  );
-
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'Found Applications',
-    jobsWithApplications,
-  });
+  const jobsWithApplications = await JobOpeningModel.aggregate(aggregationPipeline);
+  res.status(StatusCodes.OK).json({ success: true, message: 'Found Applications', jobsWithApplications });
 };
 
 const getSingleJobApplications = async (req, res) => {
-  const jobId = req?.params?.jobId;
-  const companyId = req?.user?.companyId;
-
-  console.log(jobId, companyId);
-
-  if (!jobId?.trim())
-    throw new CustomAPIError.BadRequestError('Job Id is required!');
-
-  const job = (
-    await JobOpeningModel.aggregate(
-      singleJobApplicationsAgg({ jobId, companyId })
-    )
-  )?.[0];
-
-  if (!job)
-    throw new CustomAPIError.NotFoundError(`No job found with id: ${jobId}`);
-
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'Applications found!',
-    job,
-  });
+  const { jobId } = req.params;
+  const { companyId } = req.user;
+  const job = (await JobOpeningModel.aggregate(singleJobApplicationsAgg({ jobId, companyId })))?.[0];
+  if (!job) throw new CustomAPIError.NotFoundError(`No job found with id: ${jobId}`);
+  res.status(StatusCodes.OK).json({ success: true, message: 'Applications found!', job });
 };
 
 const jobApplicationAction = async (req, res) => {
@@ -520,342 +273,125 @@ const jobApplicationAction = async (req, res) => {
   const userId = req?.user?.userId;
 
   const application = await JobApplicationModel.findById(applicationId);
-  if (!application)
-    throw new CustomAPIError.BadRequestError('Invalid application id!');
+  if (!application) throw new CustomAPIError.BadRequestError('Invalid application id!');
 
-  const { applicantId, jobId, companyId, applicationStatus: currentStatus } = application;
-
-  const {
-    isValid,
-    updatedStatus,
-    currentJobArr,
-    updatedJobArr,
-    currentApplicantArr,
-    updatedApplicantArr,
-  } = isActionValid(action, currentStatus);
+  const { applicantId, jobId, companyId, status: currentStatus } = application;
+  const { isValid, updatedStatus, currentJobArr, updatedJobArr, currentApplicantArr, updatedApplicantArr } = isActionValid(action, currentStatus);
 
   if (!isValid) throw new CustomAPIError.BadRequestError('Invalid action!');
 
   const job = await JobOpeningModel.findById(jobId);
-
-  if (job.status !== 'open')
-    throw new CustomAPIError.BadRequestError('Job is already closed!');
+  if (job.status !== 'open' && action !== 'reject') throw new CustomAPIError.BadRequestError('Job is already closed!');
 
   const company = await CompanyModel.findById(companyId);
-  if (!company.admins.includes(userId))
-    throw new CustomAPIError.BadRequestError(
-      'Not authorized to perform this action'
-    );
+  if (!company.admins.includes(userId)) throw new CustomAPIError.UnauthorizedError('Not authorized');
 
-  application.applicationStatus = updatedStatus;
+  application.status = updatedStatus;
 
-  job[currentJobArr] = job[currentJobArr].filter(
-    (id) => id.toString() !== applicantId.toString()
-  );
-  job[updatedJobArr].push(applicantId);
+  if (currentJobArr && updatedJobArr) {
+    job[currentJobArr] = job[currentJobArr].filter(id => id.toString() !== applicantId.toString());
+    job[updatedJobArr].push(applicantId);
+  }
 
   const applicant = await UserModel.findById(applicantId);
-  applicant[currentApplicantArr] = applicant[currentApplicantArr].filter(
-    (id) => id.toString() !== jobId.toString()
-  );
-  applicant[updatedApplicantArr].push(jobId);
-
-  if (updatedStatus === 'hired') {
-    company.candidatesHired = (company.candidatesHired || 0) + 1;
-
-    application.offerStatus = 'pending';
-
-    // Update user hired status
-    applicant.hiredStatus = 'pending_offer';
-    applicant.hiredJobId = jobId;
-    applicant.hiredApplicationId = applicationId;
+  if (currentApplicantArr && updatedApplicantArr) {
+    applicant[currentApplicantArr] = applicant[currentApplicantArr].filter(id => id.toString() !== jobId.toString());
+    applicant[updatedApplicantArr].push(jobId);
   }
 
   await application.save();
   await job.save();
   await applicant.save();
-  await company.save();
 
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: `Candidate is ${updatedStatus}`,
-  });
+  res.status(StatusCodes.OK).json({ success: true, message: `Candidate status updated to ${updatedStatus}`, application });
 };
 
-const createOnCampusPlacement = async (req, res) => {
-  const applicationId = req?.params?.id;
+const sendOffer = async (req, res) => {
+  const { applicationId } = req.body;
+  const userId = req.user.userId;
 
   const application = await JobApplicationModel.findById(applicationId);
+  if (!application) throw new CustomAPIError.NotFoundError('Application not found');
+  if (application.status !== 'HIRED') throw new CustomAPIError.BadRequestError('Candidate must be HIRED before sending an offer');
 
-  if (!application)
-    throw new CustomAPIError.NotFoundError(
-      `No application found with id: ${applicationId}`
-    );
+  const company = await CompanyModel.findById(application.companyId);
+  if (!company.admins.includes(userId)) throw new CustomAPIError.UnauthorizedError('Not authorized');
 
-  const { jobId, status: applicationStatus, applicantId } = application;
-  if (applicationStatus === 'hired' || applicationStatus === 'rejected')
-    throw new CustomAPIError.BadRequestError(
-      `Application is already ${applicationStatus}`
-    );
-
-  const job = await JobOpeningModel.findById(jobId);
-  const {
-    profile,
-    location,
-    company,
-    jobPackage,
-    status: jobStatus,
-    deadline,
-  } = job;
-
-  if (jobStatus !== 'open' || new Date() > deadline)
-    throw new CustomAPIError.BadRequestError(`Job is closed`);
-
-  let { offerLetter, joiningLetter } = req?.files;
-  let joiningDate = req?.body?.joiningDate;
-
-  if (joiningDate) {
-    joiningDate = new Date(joiningDate);
-    if (joiningDate == 'Invalid Date') {
-      throw new CustomAPIError.BadRequestError('Invalid joining date!');
-    }
-  }
-
-  if (offerLetter) {
-    const fileUploadResp = await fileUpload(
-      offerLetter,
-      'offer-letters',
-      'document'
-    );
-    const { fileURL } = fileUploadResp;
-    offerLetter = fileURL;
-  }
-
-  if (joiningLetter) {
-    if (!joiningDate)
-      throw new CustomAPIError.BadRequestError('Joining Date is required!');
-
-    const fileUploadResp = await fileUpload(
-      joiningLetter,
-      'joining-letters',
-      'document'
-    );
-    const { fileURL } = fileUploadResp;
-    joiningLetter = fileURL;
-  }
-
-  const user = await UserModel.findById(applicantId);
-
-  const placement = await PlacementModel.create({
-    jobProfile: profile,
-    location,
-    company: company.name,
-    departmentName: user?.departmentName,
-    package: jobPackage,
-    isOnCampus: true,
-    offerLetter,
-    joiningDate,
-    joiningLetter,
-    studentId: applicantId,
-  });
-
-  res.status(StatusCodes.CREATED).json({
-    success: true,
-    message: 'On-campus placement created!',
-    id: placement._id,
-  });
-
-  application.applicationStatus = 'hired';
+  application.status = 'OFFER_SENT';
   await application.save();
 
-  const pastCandidatesArr =
-    applicationStatus === 'pending' ? 'applicants' : 'shortlistedCandidates';
-
-  job[pastCandidatesArr] = job[pastCandidatesArr].filter(
-    (id) => id.toString() !== applicantId.toString()
-  );
-  job.selectedCandidates.push(applicantId);
-  await job.save();
-
-  const pastJobsArr =
-    applicationStatus === 'pending' ? 'jobsApplied' : 'jobsShortlisted';
-  user[pastJobsArr] = user[pastJobsArr].filter(
-    (id) => id.toString() !== jobId.toString()
-  );
-  user.jobsSelected.push(jobId);
-  user.placements.push(placement._id);
+  const user = await UserModel.findById(application.applicantId);
+  user.hiredStatus = 'OFFER_SENT';
+  user.hiredJobId = application.jobId;
+  user.hiredApplicationId = application._id;
   await user.save();
 
-  const companyDoc = await CompanyModel.findById(company.id);
-  if (companyDoc) {
-    companyDoc.candidatesHired = (companyDoc.candidatesHired || 0) + 1;
-    await companyDoc.save();
-  }
+  res.status(StatusCodes.OK).json({ success: true, message: 'Offer sent successfully', application });
 };
-
-const getStudentPublicProfile = async (req, res) => {
-  const { applicationId, studentId } = req?.params;
-
-  if (!applicationId?.trim() || !studentId?.trim())
-    throw new CustomAPIError.BadRequestError(
-      'Application Id and Student Id are required'
-    );
-
-  const application = await JobApplicationModel.findById(applicationId);
-
-  if (!application)
-    throw new CustomAPIError.NotFoundError(
-      `No application found with id: ${applicationId}`
-    );
-
-  if (application.companyId.toString() !== req?.user?.companyId)
-    throw new CustomAPIError.UnauthenticatedError("Can't access this resource");
-
-  if (application.applicantId != studentId)
-    throw new CustomAPIError.BadRequestError('Wrong student id!');
-
-  const profileDetails = (
-    await UserModel.aggregate(studentProfileDetailsAgg(studentId, false))
-  )?.[0];
-
-  if (!profileDetails)
-    throw new CustomAPIError.NotFoundError(
-      `No student found with id: ${studentId}`
-    );
-
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'Profile Details Found!',
-    profileDetails,
-  });
-};
-
-function isActionValid(action, currentStatus) {
-  const obj = {
-    isValid: false,
-    updatedStatus: '',
-    currentJobArr: '',
-    updatedJobArr: '',
-    currentApplicantArr: '',
-    updatedApplicantArr: '',
-  };
-
-  switch (action) {
-    case 'shortlist':
-      obj.isValid = currentStatus === 'pending';
-      obj.updatedStatus = 'shortlisted';
-      obj.updatedJobArr = 'shortlistedCandidates';
-      obj.updatedApplicantArr = 'jobsShortlisted';
-      break;
-    case 'hire':
-      obj.isValid =
-        currentStatus === 'pending' || currentStatus === 'shortlisted';
-      obj.updatedStatus = 'hired';
-      obj.updatedJobArr = 'selectedCandidates';
-      obj.updatedApplicantArr = 'jobsSelected';
-      break;
-    case 'reject':
-      obj.isValid =
-        currentStatus === 'pending' || currentStatus === 'shortlisted';
-      obj.updatedStatus = 'rejected';
-      obj.updatedJobArr = 'rejectedCandidates';
-      obj.updatedApplicantArr = 'jobsRejected';
-      break;
-  }
-
-  switch (currentStatus) {
-    case 'pending':
-      obj.currentJobArr = 'applicants';
-      obj.currentApplicantArr = 'jobsApplied';
-      break;
-    case 'shortlisted':
-      obj.currentJobArr = 'shortlistedCandidates';
-      obj.currentApplicantArr = 'jobsShortlisted';
-      break;
-  }
-
-  return obj;
-}
 
 const uploadOfferLetter = async (req, res) => {
-  const applicationId = req.params.applicationId;
+  const { applicationId } = req.params;
   const userId = req.user.userId;
   const offerLetterFile = req.files?.offerLetter;
 
-  if (!offerLetterFile) {
-    throw new CustomAPIError.BadRequestError('Offer letter file is required');
-  }
+  if (!offerLetterFile) throw new CustomAPIError.BadRequestError('Offer letter file is required');
 
   const application = await JobApplicationModel.findById(applicationId);
-  if (!application) {
-    throw new CustomAPIError.BadRequestError('Invalid application id');
-  }
+  if (!application) throw new CustomAPIError.NotFoundError('Application not found');
+  if (application.status !== 'OFFER_ACCEPTED') throw new CustomAPIError.BadRequestError('Offer must be accepted first');
 
-  if (application.offerStatus !== 'accepted') {
-    throw new CustomAPIError.BadRequestError('Offer is not accepted yet');
-  }
-
-  // Check if user is authorized (company admin)
   const company = await CompanyModel.findById(application.companyId);
-  if (!company.admins.includes(userId)) {
-    throw new CustomAPIError.BadRequestError('Not authorized');
-  }
+  if (!company.admins.includes(userId)) throw new CustomAPIError.UnauthorizedError('Not authorized');
 
-  const fileUploadResp = await fileUpload(offerLetterFile, 'offers', 'document');
-  const offerLetterUrl = fileUploadResp?.fileURL;
-
-  application.offerLetterUrl = offerLetterUrl;
+  const fileUploadResp = await fileUpload(offerLetterFile, 'offer-letters', 'document');
+  application.offerLetterUrl = fileUploadResp.fileURL;
   await application.save();
 
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'Offer letter uploaded successfully',
-  });
+  res.status(StatusCodes.OK).json({ success: true, message: 'Offer letter uploaded successfully', offerLetterUrl: application.offerLetterUrl });
 };
 
+function isActionValid(action, currentStatus) {
+  const obj = { isValid: false, updatedStatus: '', currentJobArr: '', updatedJobArr: '', currentApplicantArr: '', updatedApplicantArr: '' };
+  switch (action) {
+    case 'shortlist':
+      obj.isValid = currentStatus === 'APPLIED';
+      obj.updatedStatus = 'SHORTLISTED';
+      obj.currentJobArr = 'applicants'; obj.updatedJobArr = 'shortlistedCandidates';
+      obj.currentApplicantArr = 'jobsApplied'; obj.updatedApplicantArr = 'jobsShortlisted';
+      break;
+    case 'hire':
+      obj.isValid = currentStatus === 'APPLIED' || currentStatus === 'SHORTLISTED';
+      obj.updatedStatus = 'HIRED';
+      obj.currentJobArr = currentStatus === 'APPLIED' ? 'applicants' : 'shortlistedCandidates';
+      obj.updatedJobArr = 'selectedCandidates';
+      obj.currentApplicantArr = currentStatus === 'APPLIED' ? 'jobsApplied' : 'jobsShortlisted';
+      obj.updatedApplicantArr = 'jobsSelected';
+      break;
+    case 'reject':
+      obj.isValid = ['APPLIED', 'SHORTLISTED', 'HIRED'].includes(currentStatus);
+      obj.updatedStatus = 'REJECTED';
+      if (currentStatus === 'APPLIED') { obj.currentJobArr = 'applicants'; obj.currentApplicantArr = 'jobsApplied'; }
+      else if (currentStatus === 'SHORTLISTED') { obj.currentJobArr = 'shortlistedCandidates'; obj.currentApplicantArr = 'jobsShortlisted'; }
+      else if (currentStatus === 'HIRED') { obj.currentJobArr = 'selectedCandidates'; obj.currentApplicantArr = 'jobsSelected'; }
+      obj.updatedJobArr = 'rejectedCandidates'; obj.updatedApplicantArr = 'jobsRejected';
+      break;
+  }
+  return obj;
+}
+
 const getOfferDetails = async (req, res) => {
-  const applicationId = req.params.applicationId;
-  const userId = req.user.userId;
-
+  const { applicationId } = req.params;
   const application = await JobApplicationModel.findById(applicationId);
-  if (!application) {
-    throw new CustomAPIError.BadRequestError('Invalid application id');
-  }
-
-  // Check if user is authorized
-  const company = await CompanyModel.findById(application.companyId);
-  if (!company.admins.includes(userId)) {
-    throw new CustomAPIError.BadRequestError('Not authorized');
-  }
-
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'Offer details found',
-    offer: {
-      status: application.offerStatus,
-      offerLetter: application.offerLetterUrl,
-    },
-  });
+  if (!application) throw new CustomAPIError.BadRequestError('Invalid application id');
+  res.status(StatusCodes.OK).json({ success: true, offer: { status: application.status, offerLetter: application.offerLetterUrl } });
 };
 
 const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  if (!currentPassword || !newPassword) {
-    throw new CustomAPIError.BadRequestError('Please provide both current and new passwords');
-  }
-
-  // UserModel is required at top? Let's check. UserModel is used for companyAdmin etc.
   const user = await UserModel.findById(req.user.userId);
-  if (!user) throw new CustomAPIError.UnauthenticatedError('Invalid credentials');
-
-  const isPasswordCorrect = await user.comparePassword(currentPassword);
-  if (!isPasswordCorrect) {
-    throw new CustomAPIError.UnauthenticatedError('Invalid credentials');
-  }
-
+  if (!(await user.comparePassword(currentPassword))) throw new CustomAPIError.UnauthenticatedError('Invalid credentials');
   user.password = newPassword;
   await user.save();
-
   res.status(StatusCodes.OK).json({ success: true, message: 'Password updated successfully' });
 };
 
@@ -864,122 +400,94 @@ const getTopCandidates = async (req, res) => {
   const job = await JobOpeningModel.findById(jobId);
   if (!job) throw new CustomAPIError.NotFoundError('Job not found');
 
-  const { receivingDepartments, receivingBatch, keySkills, eligibilityCriteria, enableEligibilityFilter } = job;
-  const deptIds = receivingDepartments.map((d) => d.id);
+  const deptIds = Array.isArray(job.receivingDepartments) 
+    ? job.receivingDepartments.map((d) => d.id) 
+    : job.receivingDepartments?.id ? [job.receivingDepartments.id] : [];
+  const batchIds = Array.isArray(job.receivingBatch) 
+    ? job.receivingBatch.map((b) => b.id) 
+    : job.receivingBatch?.id ? [job.receivingBatch.id] : [];
 
-  // Find students in same dept and batch
-  let query = {
+  const query = {
     role: 'student',
-    departmentId: { $in: deptIds },
-    batchId: receivingBatch.id,
+    courseId: { 
+      $in: Array.isArray(job.receivingCourses) 
+        ? job.receivingCourses.map((c) => c.id) 
+        : job.receivingCourses?.id ? [job.receivingCourses.id] : [] 
+    },
   };
 
-  const students = await UserModel.find(query).populate('educationDetails');
+  if (deptIds.length > 0) query.departmentId = { $in: deptIds };
+  if (batchIds.length > 0) query.batchId = { $in: batchIds };
 
-  const jobSkills = keySkills.map((s) => s.toLowerCase().trim());
+  const students = await UserModel.find(query);
+  const jobSkills = (job.keySkills || []).map((s) => s.toLowerCase().trim());
 
-  const rankedCandidates = students.map((student) => {
-    // 1. Skills Match (50% weight)
-    const studentSkills = (student.skills || []).map((s) => s.toLowerCase().trim());
-    const matchedSkills = jobSkills.filter((s) => studentSkills.includes(s));
-    const skillScore = jobSkills.length > 0 ? matchedSkills.length / jobSkills.length : 0;
+  const rankedCandidates = await Promise.all(
+    students.map(async (student) => {
+      const studentEducation = await (EducationModel || require('../models/student').EducationModel).findOne({ studentId: student._id });
+      const studentSkills = (student.skills || []).map((s) => s.toLowerCase().trim());
+      
+      let skillScore = 0;
+      if (jobSkills.length > 0) {
+        const matched = jobSkills.filter((s) => studentSkills.includes(s));
+        skillScore = matched.length / jobSkills.length;
+      }
 
-    // 2. CGPA Match (30% weight)
-    const cgpa = student.educationDetails?.graduation?.aggregateGPA || 0;
-    const cgpaScore = cgpa / 10;
+      const cgpa = studentEducation?.graduation?.aggregateGPA || 0;
+      const matchScore =
+        skillScore * 0.5 +
+        (cgpa / 10) * 0.3 +
+        (1 / (1 + (student.activeBacklogs || 0))) * 0.2;
 
-    // 3. Backlog Penalty (20% weight)
-    const backlogScore = 1 / (1 + (student.activeBacklogs || 0));
-
-    // Weighted Score
-    const matchScore = skillScore * 0.5 + cgpaScore * 0.3 + backlogScore * 0.2;
-
-    return {
-      id: student._id,
-      name: student.name,
-      email: student.email,
-      department: student.departmentName,
-      cgpa,
-      skills: student.skills,
-      matchScore: Math.round(matchScore * 100),
-      isApplied: job.applicants.includes(student._id),
-    };
-  });
-
-  rankedCandidates.sort((a, b) => b.matchScore - a.matchScore);
+      return {
+        id: student._id,
+        name: student.name,
+        email: student.email,
+        department: student.departmentName,
+        cgpa,
+        skills: student.skills,
+        matchScore: Math.round(matchScore * 100),
+        isApplied: job.applicants.includes(student._id),
+      };
+    })
+  );
 
   res.status(StatusCodes.OK).json({
     success: true,
-    candidates: rankedCandidates.slice(0, 10),
+    candidates: rankedCandidates
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, 10),
   });
 };
 
 const getCompanyDashboardStats = async (req, res) => {
   const { companyId } = req.user;
-
-  const totalJobs = await JobOpeningModel.countDocuments({
-    'company.id': companyId,
-  });
-  const openJobs = await JobOpeningModel.countDocuments({
-    'company.id': companyId,
-    status: 'open',
-  });
-
-  // Status distribution across all applications for this company
+  const totalJobs = await JobOpeningModel.countDocuments({ 'company.id': companyId });
+  const openJobs = await JobOpeningModel.countDocuments({ 'company.id': companyId, status: 'open' });
   const statusCounts = await JobApplicationModel.aggregate([
-    {
-      $match: {
-        companyId: new mongoose.Types.ObjectId(companyId),
-      },
-    },
-    {
-      $group: {
-        _id: '$applicationStatus',
-        count: {
-          $sum: 1,
-        },
-      },
-    },
+    { $match: { companyId: new mongoose.Types.ObjectId(companyId) } },
+    { $group: { _id: '$status', count: { $sum: 1 } } }
   ]);
-
-  const recentApplications = await JobApplicationModel.find({
-    companyId,
-  })
-    .sort({
-      createdAt: -1,
-    })
-    .limit(5)
-    .populate('jobId', 'profile')
-    .populate('applicantId', 'name email');
+  const recentApplications = await JobApplicationModel.find({ companyId }).sort({ createdAt: -1 }).limit(5).populate('jobId', 'profile').populate('applicantId', 'name email');
 
   res.status(StatusCodes.OK).json({
     success: true,
-    stats: {
-      totalJobs,
-      openJobs,
-      statusCounts: statusCounts.reduce((acc, curr) => {
-        acc[curr._id] = curr.count;
-        return acc;
-      }, {}),
-    },
-    recentApplications,
+    stats: { totalJobs, openJobs, statusCounts: statusCounts.reduce((acc, curr) => { acc[curr._id] = curr.count; return acc; }, {}) },
+    recentApplications
   });
 };
 
+const getStudentPublicProfile = async (req, res) => {
+  const { applicationId, studentId } = req.params;
+  const application = await JobApplicationModel.findById(applicationId);
+  if (!application || application.companyId.toString() !== req.user.companyId || application.applicantId.toString() !== studentId)
+    throw new CustomAPIError.UnauthorizedError("Unauthorized access!");
+  const profileDetails = (await UserModel.aggregate(studentProfileDetailsAgg(studentId, false)))?.[0];
+  res.status(StatusCodes.OK).json({ success: true, profileDetails });
+};
+
 module.exports = {
-  createJobOpening,
-  updateJobOpening,
-  deleteJobOpening,
-  getJobsForIncharge,
-  getJobApplications,
-  jobApplicationAction,
-  createOnCampusPlacement,
-  getStudentPublicProfile,
-  getSingleJob,
-  getSingleJobApplications,
-  uploadOfferLetter,
-  getOfferDetails,
-  changePassword,
-  getTopCandidates,
-  getCompanyDashboardStats,
+  createJobOpening, updateJobOpening, deleteJobOpening, getJobsForIncharge, getJobApplications, jobApplicationAction,
+  getStudentPublicProfile, getSingleJob, getSingleJobApplications, uploadOfferLetter, getOfferDetails, changePassword,
+  getTopCandidates, getCompanyDashboardStats, sendOffer
 };

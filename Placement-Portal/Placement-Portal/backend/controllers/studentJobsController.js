@@ -1,6 +1,7 @@
 const JobOpeningModel = require('../models/JobOpenings');
 const UserModel = require('../models/User');
 const PersonalDataModel = require('../models/student/PersonalData');
+const CompanyModel = require('../models/Company');
 
 const { StatusCodes } = require('http-status-codes');
 const CustomAPIError = require('../errors');
@@ -18,17 +19,35 @@ const { EducationModel } = require('../models/student');
 const OfferModel = require('../models/Offer');
 
 const getJobsForStudent = async (req, res) => {
-  const status = req?.query?.status?.toLowerCase() || 'open';
-  const validStatus = ['open', 'applied', 'shortlisted', 'rejected', 'hired'];
-
-  if (!status?.trim() || !validStatus.includes(status)) {
-    throw new CustomAPIError.BadRequestError('Invalid job status');
-  }
+  const status = req?.query?.status?.toUpperCase() || 'open';
+  const validStatus = ['OPEN', 'APPLIED', 'SHORTLISTED', 'REJECTED', 'HIRED'];
+  
+  const displayStatus = status === 'HIRED' ? 'HIRED' : status.toLowerCase();
 
   const { batchId, departmentId, courseId, userId } = req.user;
 
+  if (!courseId || !batchId || !departmentId) {
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Complete your profile (Course, Batch, Department) to see jobs',
+      jobs: [],
+    });
+  }
+
+  const student = await UserModel.findById(userId);
+  const studentEducation = await EducationModel.findOne({ studentId: userId });
+  const studentPersonal = await PersonalDataModel.findOne({ studentId: userId });
+
+  // Requirement 6: Check for mandatory profile fields
+  const isProfileComplete = 
+    studentEducation?.highschool?.score != null &&
+    studentEducation?.intermediate?.score != null &&
+    studentEducation?.graduation?.aggregateGPA != null &&
+    student?.activeBacklogs != null &&
+    studentPersonal?.dateOfBirth != null;
+
   let jobs;
-  if (status === 'open') {
+  if (displayStatus === 'open') {
     jobs = await JobOpeningModel.aggregate(
       studentJobOpeningsAgg({
         batchId,
@@ -39,60 +58,54 @@ const getJobsForStudent = async (req, res) => {
     );
   } else {
     jobs = await UserModel.aggregate(
-      studentJobsByStatusAgg({ userId, status })
+      studentJobsByStatusAgg({ userId, status: displayStatus })
     );
   }
 
-  const student = await UserModel.findById(userId);
-  const studentEducation = await EducationModel.findOne({ studentId: userId });
-  const studentPersonal = await PersonalDataModel.findOne({ studentId: userId });
   const userSkills = (student.skills || []).map((s) => s.toLowerCase().trim());
 
   jobs = jobs.map((job) => {
+    // Skill matching
     let requiredSkills = job.keySkills || [];
-    let matchScore = 0;
     let matchedSkills = [];
     let missingSkills = [];
+    let skillMatchScore = 0;
 
     if (requiredSkills.length > 0) {
-      if (userSkills.length > 0) {
-        requiredSkills.forEach((rSkill) => {
-          if (userSkills.includes(rSkill.toLowerCase().trim())) {
-            matchedSkills.push(rSkill);
-          } else {
-            missingSkills.push(rSkill);
-          }
-        });
-        matchScore = Math.round((matchedSkills.length / requiredSkills.length) * 100);
-      } else {
-        missingSkills = [...requiredSkills];
-        matchScore = 0;
-      }
+      requiredSkills.forEach((rSkill) => {
+        if (userSkills.includes(rSkill.toLowerCase().trim())) {
+          matchedSkills.push(rSkill);
+        } else {
+          missingSkills.push(rSkill);
+        }
+      });
+      skillMatchScore = Math.round((matchedSkills.length / requiredSkills.length) * 100);
     } else {
-      matchScore = 'N/A';
+      skillMatchScore = 100;
     }
 
-    let eligibilityStatus = { isEligible: true, reasons: [] };
-    if (job.enableEligibilityFilter && job.eligibilityCriteria) {
-      if (!studentEducation) {
-        eligibilityStatus = {
-          isEligible: false,
-          reasons: ['Your education details are incomplete. Please update your profile.'],
-        };
-      } else {
-        eligibilityStatus = checkAcademicEligibility(
-          studentEducation,
-          job.eligibilityCriteria,
-          studentPersonal,
-          student
-        );
-      }
+    // Eligibility check
+    let eligibilityStatus = { isEligible: true, reasons: [], matchCount: 0, totalCriteria: 0 };
+    if (!isProfileComplete) {
+      eligibilityStatus = {
+        isEligible: false,
+        reasons: ['Complete your profile to check eligibility'],
+        matchCount: 0,
+        totalCriteria: 0
+      };
+    } else if (job.enableEligibilityFilter && job.eligibilityCriteria) {
+      eligibilityStatus = checkAcademicEligibility(
+        studentEducation,
+        job.eligibilityCriteria,
+        studentPersonal,
+        student
+      );
     }
 
     return {
       ...job,
       matchFeature: {
-        matchScore,
+        skillMatchScore,
         matchedSkills,
         missingSkills,
       },
@@ -102,10 +115,11 @@ const getJobsForStudent = async (req, res) => {
 
   res.status(StatusCodes.OK).json({
     success: true,
-    message: 'Jobs found!',
+    message: isProfileComplete ? 'Jobs found!' : 'Complete your profile to see eligibility',
     jobs,
     hiredStatus: student.hiredStatus,
     hiredJobId: student.hiredJobId,
+    isProfileComplete
   });
 
   student.lastJobFetched = new Date();
@@ -114,9 +128,6 @@ const getJobsForStudent = async (req, res) => {
 
 const getStudentJobById = async (req, res) => {
   const jobId = req?.params?.jobId;
-  if (!jobId?.trim())
-    throw new CustomAPIError.BadRequestError('Job Id is required!');
-
   const { batchId, departmentId, courseId, userId } = req.user;
 
   const job = (
@@ -126,41 +137,28 @@ const getStudentJobById = async (req, res) => {
   )?.[0];
 
   if (!job)
-    throw new CustomAPIError.NotFoundError(`No job found with id: ${jobId}`);
+    throw new CustomAPIError.NotFoundError('Job not found or not targeted for you.');
 
   const student = await UserModel.findById(userId);
+  const studentEducation = await EducationModel.findOne({ studentId: userId });
   const studentPersonal = await PersonalDataModel.findOne({ studentId: userId });
-  const userSkills = (student.skills || []).map((s) => s.toLowerCase().trim());
-  
-  let requiredSkills = job.keySkills || [];
-  let matchScore = 0;
-  let matchedSkills = [];
-  let missingSkills = [];
 
-  if (requiredSkills.length > 0) {
-    if (userSkills.length > 0) {
-      requiredSkills.forEach((rSkill) => {
-        if (userSkills.includes(rSkill.toLowerCase().trim())) {
-          matchedSkills.push(rSkill);
-        } else {
-          missingSkills.push(rSkill);
-        }
-      });
-      matchScore = Math.round((matchedSkills.length / requiredSkills.length) * 100);
-    } else {
-      missingSkills = [...requiredSkills];
-      matchScore = 0;
-    }
-  } else {
-    matchScore = 'N/A';
-  }
+  const isProfileComplete = 
+    studentEducation?.highschool?.score != null &&
+    studentEducation?.intermediate?.score != null &&
+    studentEducation?.graduation?.aggregateGPA != null &&
+    student?.activeBacklogs != null &&
+    studentPersonal?.dateOfBirth != null;
 
-  // Check eligibility if filter is enabled
-  let eligibilityStatus = { isEligible: true, reasons: [] };
-  if (job.enableEligibilityFilter && job.eligibilityCriteria) {
-    const studentEducation = await EducationModel.findOne({
-      studentId: userId,
-    });
+  let eligibilityStatus = { isEligible: true, reasons: [], matchCount: 0, totalCriteria: 0 };
+  if (!isProfileComplete) {
+    eligibilityStatus = {
+      isEligible: false,
+      reasons: ['Complete your profile to check eligibility'],
+      matchCount: 0,
+      totalCriteria: 0
+    };
+  } else if (job.enableEligibilityFilter && job.eligibilityCriteria) {
     eligibilityStatus = checkAcademicEligibility(
       studentEducation,
       job.eligibilityCriteria,
@@ -169,20 +167,9 @@ const getStudentJobById = async (req, res) => {
     );
   }
 
-  const jobWithMatch = {
-    ...job,
-    matchFeature: {
-      matchScore,
-      matchedSkills,
-      missingSkills,
-    },
-    eligibilityStatus,
-  };
-
   res.status(StatusCodes.OK).json({
     success: true,
-    message: 'Job found!',
-    job: jobWithMatch,
+    job: { ...job, eligibilityStatus, isProfileComplete },
   });
 };
 
@@ -190,98 +177,36 @@ const createJobApplication = async (req, res) => {
   const { portfolio, coverLetter } = req?.body;
   const resumeFile = req?.files?.resumeFile;
   const jobId = req?.params?.id;
-  const {
-    userId: applicantId,
-    name: applicantName,
-    courseId,
-    departmentId,
-    batchId,
-  } = req.user;
+  const { userId: applicantId } = req.user;
 
-  if (!jobId?.trim())
-    throw new CustomAPIError.BadRequestError('Job Id is required!');
-
-  if (!portfolio?.trim() || !coverLetter?.trim() || !resumeFile)
-    throw new CustomAPIError.BadRequestError(
-      'Portfolio, Cover letter & Resume are required!'
-    );
-
-  /* VALIDATE JOB & APPLICANT */
-
+  // Requirement 4: Application Restriction
   const applicant = await UserModel.findById(applicantId);
-  if (!applicant) throw new CustomAPIError.BadRequestError('Invalid user!');
-
-  const applicantPersonal = await PersonalDataModel.findOne({ studentId: applicantId });
-
-  // Check if student is already hired
-  if (applicant.hiredStatus !== 'none') {
-    throw new CustomAPIError.BadRequestError(
-      'You are already hired and cannot apply for new jobs.'
-    );
+  if (['OFFER_ACCEPTED', 'OFFER_REJECTED'].includes(applicant.hiredStatus)) {
+    throw new CustomAPIError.BadRequestError('You have already finalized an offer and cannot apply further.');
   }
 
   const job = await JobOpeningModel.findById(jobId);
+  if (!job || job.status !== 'open') throw new CustomAPIError.BadRequestError('Job is not open.');
 
-  const now = new Date();
-  if (new Date(job.deadline) < now) {
-    job.status = 'closed';
-    await job.save();
-    throw new CustomAPIError.BadRequestError(
-      'Deadline passed. You can no longer apply for this job.'
-    );
+  // Final check: Targeting Logic (Multi Batch/Dept)
+  const studentBatchId = applicant.batchId.toString();
+  const studentDeptId = applicant.departmentId.toString();
+  
+  const matchesBatch = job.receivingBatch.length === 0 || job.receivingBatch.some(b => b.id.toString() === studentBatchId);
+  const matchesDept = job.receivingDepartments.length === 0 || job.receivingDepartments.some(d => d.id.toString() === studentDeptId);
+
+  if (!matchesBatch || !matchesDept) {
+    throw new CustomAPIError.BadRequestError('You are not targeted for this job.');
   }
 
-  if (job.status !== 'open')
-    throw new CustomAPIError.BadRequestError("This job isn't open anymore!");
-
-  if (
-    job.applicants.includes(applicantId) ||
-    job.rejectedCandidates.includes(applicantId) ||
-    job.shortlistedCandidates.includes(applicantId) ||
-    job.selectedCandidates.includes(applicantId)
-  )
-    throw new CustomAPIError.BadRequestError(
-      'You have already applied for this job!'
-    );
-
-  const validDeptIds = job.receivingDepartments.map((dept) => dept.id.toString());
-  const validCourseIds = job.receivingCourses.map((course) => course.id.toString());
-
-  if (
-    !validCourseIds.includes(courseId) ||
-    job.receivingBatch.id.toString() !== batchId ||
-    !validDeptIds.includes(departmentId)
-  )
-    throw new CustomAPIError.BadRequestError("You can't apply for this job!");
-
-  // Check eligibility if filter is enabled
-  if (job.enableEligibilityFilter && job.eligibilityCriteria) {
-    const studentEducation = await EducationModel.findOne({
-      studentId: applicantId,
-    });
-
-    if (!studentEducation) {
-      throw new CustomAPIError.BadRequestError(
-        'Your education details are not complete. Please update your profile first.'
-      );
-    }
-
-    const eligibilityStatus = checkAcademicEligibility(
-      studentEducation,
-      job.eligibilityCriteria,
-      applicantPersonal,
-      applicant
-    );
-
-    if (!eligibilityStatus.isEligible) {
-      const reasonsMessage = eligibilityStatus.reasons.join(' | ');
-      throw new CustomAPIError.BadRequestError(
-        `You are not eligible for this job. Reason: ${reasonsMessage}`
-      );
-    }
+  // Eligibility check inside apply
+  const studentEducation = await EducationModel.findOne({ studentId: applicantId });
+  const studentPersonal = await PersonalDataModel.findOne({ studentId: applicantId });
+  
+  const eligibility = checkAcademicEligibility(studentEducation, job.eligibilityCriteria, studentPersonal, applicant);
+  if (!eligibility.isEligible) {
+    throw new CustomAPIError.BadRequestError(`Eligibility failed: ${eligibility.reasons.join(', ')}`);
   }
-
-  /* END VALIDATION */
 
   const fileUploadResp = await fileUpload(resumeFile, 'resumes', 'document');
   const resume = fileUploadResp?.fileURL;
@@ -289,17 +214,11 @@ const createJobApplication = async (req, res) => {
   const jobApplication = await JobApplicationModel.create({
     jobId,
     applicantId,
-    applicantName,
+    applicantName: applicant.name,
     coverLetter,
     portfolio,
     resume,
     companyId: job.company.id,
-  });
-
-  res.status(StatusCodes.CREATED).json({
-    success: true,
-    message: 'Job Application Created!',
-    id: jobApplication._id,
   });
 
   job.applicants.push(applicantId);
@@ -309,6 +228,8 @@ const createJobApplication = async (req, res) => {
   applicant.jobsApplied.push(jobId);
   applicant.jobApplications.push(jobApplication._id);
   await applicant.save();
+
+  res.status(StatusCodes.CREATED).json({ success: true, message: 'Applied successfully!' });
 };
 
 const getApplications = async (req, res) => {
@@ -316,86 +237,51 @@ const getApplications = async (req, res) => {
   const applications = await JobApplicationModel.aggregate(
     studentJobApplicationsAgg({ applicantId })
   );
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'found applications',
-    applications,
-  });
+  res.status(StatusCodes.OK).json({ success: true, applications });
 };
 
 const getOfferStatus = async (req, res) => {
   const userId = req.user.userId;
+  const application = await JobApplicationModel.findOne({ 
+    applicantId: userId, 
+    status: { $in: ['OFFER_SENT', 'OFFER_ACCEPTED', 'OFFER_REJECTED', 'HIRED'] } 
+  }).populate('jobId');
 
-  const application = await JobApplicationModel.findOne({ applicantId: userId, applicationStatus: 'hired' }).populate('jobId');
-  if (!application) {
-    return res.status(StatusCodes.OK).json({
-      success: true,
-      message: 'No offer found',
-      offer: null,
-    });
-  }
-
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'Offer found',
-    offer: {
-      id: application._id,
-      status: application.offerStatus,
-      offerLetter: application.offerLetterUrl,
-      jobTitle: application.jobId ? application.jobId.profile : 'Job Position',
-      companyName: application.jobId ? application.jobId.company.name : 'Company Name',
-    },
-  });
+  res.status(StatusCodes.OK).json({ success: true, offer: application });
 };
 
 const acceptOffer = async (req, res) => {
   const userId = req.user.userId;
-
   const user = await UserModel.findById(userId);
-  if (!user || user.hiredStatus !== 'pending_offer') {
-    throw new CustomAPIError.BadRequestError('No pending offer to accept');
-  }
+  if (user.hiredStatus !== 'OFFER_SENT') throw new CustomAPIError.BadRequestError('No pending offer.');
 
-  const application = await JobApplicationModel.findOne({ applicantId: userId, applicationStatus: 'hired' });
-  if (!application || application.offerStatus !== 'pending') {
-    throw new CustomAPIError.BadRequestError('No pending offer to accept');
-  }
-
-  application.offerStatus = 'accepted';
+  const application = await JobApplicationModel.findOne({ applicantId: userId, status: 'OFFER_SENT' });
+  application.status = 'OFFER_ACCEPTED';
   await application.save();
 
-  user.hiredStatus = 'accepted';
+  user.hiredStatus = 'OFFER_ACCEPTED';
   await user.save();
 
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'Offer accepted successfully',
-  });
+  const company = await CompanyModel.findById(application.companyId);
+  company.candidatesHired = (company.candidatesHired || 0) + 1;
+  await company.save();
+
+  res.status(StatusCodes.OK).json({ success: true, message: 'Offer accepted!' });
 };
 
 const rejectOffer = async (req, res) => {
   const userId = req.user.userId;
-
   const user = await UserModel.findById(userId);
-  if (!user || user.hiredStatus !== 'pending_offer') {
-    throw new CustomAPIError.BadRequestError('No pending offer to reject');
-  }
+  if (user.hiredStatus !== 'OFFER_SENT') throw new CustomAPIError.BadRequestError('No pending offer.');
 
-  const application = await JobApplicationModel.findOne({ applicantId: userId, applicationStatus: 'hired' });
-  if (!application || application.offerStatus !== 'pending') {
-    throw new CustomAPIError.BadRequestError('No pending offer to reject');
-  }
-
-  application.offerStatus = 'rejected';
+  const application = await JobApplicationModel.findOne({ applicantId: userId, status: 'OFFER_SENT' });
+  application.status = 'OFFER_REJECTED';
   await application.save();
 
-  user.hiredStatus = 'rejected';
+  user.hiredStatus = 'OFFER_REJECTED';
   await user.save();
 
-  res.status(StatusCodes.OK).json({
-    success: true,
-    message: 'Offer rejected',
-  });
+  res.status(StatusCodes.OK).json({ success: true, message: 'Offer rejected.' });
 };
 
 module.exports = {

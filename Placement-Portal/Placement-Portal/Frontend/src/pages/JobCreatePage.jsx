@@ -166,12 +166,11 @@ const JobCreatePage = () => {
           emptyMsg="Select a course!"
         />
 
-        <SelectInput
-          label="Select Batch"
+        <CheckboxInput
+          label="Select Batches"
           options={batchOptions}
-          id="createJobBatch"
-          name="receivingBatch"
-          emptyMessage="No batches found for this course!"
+          name="receivingBatches"
+          emptyMsg="Select a course!"
         />
 
         <MultipleInputs
@@ -273,8 +272,11 @@ const JobCreatePage = () => {
             </div>
 
             <div className="col-span-2">
-              <p className="text-sm text-gray-600 italic">
-                💡 Tip: Set the criteria that best fit your requirements. Students will only be able to apply if they meet ALL the criteria you set.
+              <p className="text-sm text-blue-600 font-semibold italic">
+                ℹ️ Note: Only the criteria that you fill in will be applied. Empty fields will be ignored.
+              </p>
+              <p className="text-sm text-gray-600 italic mt-1">
+                💡 Tip: Set the criteria that best fit your requirements. Missing student data will NOT cause rejection unless a value is specified here.
               </p>
             </div>
           </div>
