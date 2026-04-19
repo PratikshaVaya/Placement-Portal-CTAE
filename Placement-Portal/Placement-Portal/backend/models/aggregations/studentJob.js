@@ -223,17 +223,38 @@ function singleJobStudentAgg({
 function companyInchargeJobsAgg({ companyId, status }) {
   companyId = new mongoose.Types.ObjectId(companyId);
 
+  // Build the match condition
+  let matchCondition;
+  if (status === 'expired') {
+    // Show jobs explicitly marked expired OR open jobs whose deadline has passed (legacy)
+    matchCondition = {
+      'company.id': companyId,
+      $or: [
+        { status: 'expired' },
+        { status: 'open', deadline: { $lt: new Date() } },
+      ],
+    };
+  } else {
+    // For 'open': only truly open jobs where the deadline hasn't passed
+    matchCondition = {
+      'company.id': companyId,
+      status,
+      ...(status === 'open' ? { deadline: { $gte: new Date() } } : {}),
+    };
+  }
+
   return [
-    {
-      $match: {
-        'company.id': companyId,
-        status,
-      },
-    },
+    { $match: matchCondition },
     {
       $addFields: {
         applicationsCount: {
           $size: { $ifNull: ['$applications', []] },
+        },
+        isExpired: {
+          $or: [
+            { $eq: ['$status', 'expired'] },
+            { $lt: ['$deadline', new Date()] },
+          ],
         },
       },
     },

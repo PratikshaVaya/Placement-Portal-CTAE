@@ -219,7 +219,7 @@ const JobOpeningSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ['open', 'closed'],
+      enum: ['open', 'closed', 'expired'],
       default: 'open',
     },
 
@@ -277,9 +277,15 @@ const JobOpeningSchema = new mongoose.Schema(
 );
 
 JobOpeningSchema.pre('save', async function () {
-  if (!this.isModified('selectedCandidates')) return;
-  if (this.selectedCandidates.length === this.openingsCount) {
-    this.status = 'closed';
+  // Auto-close when all openings are filled
+  if (this.isModified('selectedCandidates')) {
+    if (this.selectedCandidates.length === this.openingsCount) {
+      this.status = 'closed';
+    }
+  }
+  // Auto-expire when deadline has passed (only for open jobs)
+  if (this.status === 'open' && this.deadline && new Date() > new Date(this.deadline)) {
+    this.status = 'expired';
   }
 });
 

@@ -23,6 +23,7 @@ const SingleJob = ({ job, status, role }) => {
     matchFeature,
     enableEligibilityFilter,
     eligibilityStatus,
+    status: jobStatus,
   } = job;
 
   const { matchScore, matchedSkills, missingSkills } = matchFeature || {};
@@ -36,7 +37,8 @@ const SingleJob = ({ job, status, role }) => {
   const deadlineDiffDays = Math.floor(
     (deadlineDate.setHours(23, 59, 59, 999) - now) / (1000 * 60 * 60 * 24)
   );
-  const isExpired = deadlineDiffDays < 0;
+  // A job is expired if the deadline has passed OR its status is explicitly 'expired'
+  const isExpired = deadlineDiffDays < 0 || jobStatus === 'expired';
   const deadlineStatusText = isExpired
     ? 'Expired'
     : deadlineDiffDays <= 1
@@ -57,16 +59,24 @@ const SingleJob = ({ job, status, role }) => {
 
   return (
     <div className="card gap-y-2 border-t border-b-slate-200 p-4 shadow-md hover:shadow-xl w-sm border-l-gray-700">
-      {role == 'company_admin' && applicationsCount === 0 && (
+      {role == 'company_admin' && (
         <div className="flex items-center gap-4 justify-end">
-          <Link to={`/company-dashboard/edit-job/${_id}`}>
-            <FaEdit />
-          </Link>
-          <button
-            onClick={() => handleDeleteJob({ queryClient, dispatch, id: _id })}
+          {/* Edit: show for all admin jobs (to allow reopening expired ones with new deadline) */}
+          <Link
+            to={`/company-dashboard/edit-job/${_id}`}
+            title={isExpired ? 'Edit to reopen this expired job' : 'Edit job'}
           >
-            <MdDelete />
-          </button>
+            <FaEdit className={isExpired ? 'text-orange-500' : ''} />
+          </Link>
+          {/* Delete: only if no applications yet */}
+          {applicationsCount === 0 && (
+            <button
+              onClick={() => handleDeleteJob({ queryClient, dispatch, id: _id })}
+              title="Delete job"
+            >
+              <MdDelete />
+            </button>
+          )}
         </div>
       )}
       <div className="flex gap-x-2 items-center">
@@ -114,6 +124,11 @@ const SingleJob = ({ job, status, role }) => {
       {isExpired && (
         <p className="text-sm text-error font-semibold mt-1">
           Deadline passed
+          {role === 'company_admin' && (
+            <span className="ml-2 text-orange-500 font-normal">
+              — Edit job to set a new deadline and reopen
+            </span>
+          )}
         </p>
       )}
 

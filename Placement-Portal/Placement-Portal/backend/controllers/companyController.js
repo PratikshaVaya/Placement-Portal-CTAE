@@ -135,6 +135,17 @@ const getJobsForIncharge = async (req, res) => {
   if (!company.admins.includes(userId))
     throw new CustomAPIError.UnauthorizedError(`Not allowed to access this resource!`);
 
+  // Background sync: mark any open jobs with past deadlines as 'expired' in the DB
+  // This runs without blocking the response
+  JobOpeningModel.updateMany(
+    {
+      'company.id': new mongoose.Types.ObjectId(companyId),
+      status: 'open',
+      deadline: { $lt: new Date() },
+    },
+    { $set: { status: 'expired' } }
+  ).catch((err) => console.error('Failed to auto-expire jobs:', err));
+
   const jobs = await JobOpeningModel.aggregate(
     companyInchargeJobsAgg({ companyId, status })
   );
@@ -227,6 +238,18 @@ const updateJobOpening = async (req, res) => {
     if (maxCompletedBacklogs !== undefined) ec.maxCompletedBacklogs = maxCompletedBacklogs !== undefined && maxCompletedBacklogs !== '' ? Number(maxCompletedBacklogs) : null;
     if (maxDOB !== undefined) ec.maxDOB = maxDOB ? new Date(maxDOB) : null;
     updateData.eligibilityCriteria = ec;
+  }
+
+  // Auto-reopen: if a new future deadline is being set and the job is expired, reset to open
+  if (deadline !== undefined) {
+    const newDeadline = new Date(deadline);
+    if (!isNaN(newDeadline) && newDeadline > new Date()) {
+      // New deadline is in the future — reopen the job if it was expired
+      const currentJob = await JobOpeningModel.findById(jobId);
+      if (currentJob && currentJob.status === 'expired') {
+        updateData.status = 'open';
+      }
+    }
   }
 
   const jobOpening = await JobOpeningModel.findByIdAndUpdate(
