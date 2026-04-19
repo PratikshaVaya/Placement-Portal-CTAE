@@ -261,8 +261,9 @@ const ApplicationFilterPanel = ({ onFiltersChange, branches = [] }) => {
                 onFiltersChange({ ...filters, isSmartFilter: newSmartValue });
               }}
               className={`btn btn-sm flex-1 min-w-[120px] ${filters.isSmartFilter ? 'btn-secondary animate-pulse shadow-lg border-2 border-purple-400' : 'btn-outline border-purple-400 text-purple-600'}`}
+              title="Ranks and auto-filters the Pending applications using AI"
             >
-              {filters.isSmartFilter ? '✨ AI Filter Active' : '✨ Smart AI Filter'}
+              {filters.isSmartFilter ? '✨ AI Filter Active (Pending only)' : '✨ Smart AI Filter (Pending only)'}
             </button>
             <button
               onClick={resetFilters}

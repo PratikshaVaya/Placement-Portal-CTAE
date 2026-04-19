@@ -104,7 +104,7 @@ const SingleJobApplication = ({
   };
 
   // Client-side filtering and sorting function
-  const applyClientFilters = (applications, currentFilters) => {
+  const applyClientFilters = (applications, currentFilters, jobType) => {
     if (!applications || !currentFilters) return applications;
 
     let filtered = applications.map(app => ({
@@ -152,7 +152,7 @@ const SingleJobApplication = ({
     });
 
     // Sort result
-    if (currentFilters.isSmartFilter) {
+    if (currentFilters.isSmartFilter && jobType === 'pending') {
         filtered.sort((a, b) => b.matchScore - a.matchScore);
         return filtered.slice(0, 10);
     }
@@ -209,7 +209,7 @@ const SingleJobApplication = ({
           jobId={jobId}
           jobType="pending"
           label="APPLIED"
-          arr={applyClientFilters(pending, filters)}
+          arr={applyClientFilters(pending, filters, 'pending')}
           originalLength={pending.length}
           onAction={handleAction}
           onBulkAction={handleBulkAction}
@@ -219,7 +219,7 @@ const SingleJobApplication = ({
           jobId={jobId}
           jobType="shortlisted"
           label="SHORTLISTED"
-          arr={applyClientFilters(shortlisted, filters)}
+          arr={applyClientFilters(shortlisted, filters, 'shortlisted')}
           originalLength={shortlisted.length}
           onAction={handleAction}
         />
@@ -227,7 +227,7 @@ const SingleJobApplication = ({
           jobId={jobId}
           jobType="hired"
           label="HIRED / OFFERS"
-          arr={applyClientFilters(hired, filters)}
+          arr={applyClientFilters(hired, filters, 'hired')}
           originalLength={hired.length}
           onAction={handleAction}
           onSendOffer={handleSendOffer}
@@ -236,7 +236,7 @@ const SingleJobApplication = ({
           jobId={jobId}
           jobType="rejected"
           label="REJECTED"
-          arr={applyClientFilters(rejected, filters)}
+          arr={applyClientFilters(rejected, filters, 'rejected')}
           originalLength={rejected.length}
           onAction={handleAction}
         />
