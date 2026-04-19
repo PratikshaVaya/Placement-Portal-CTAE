@@ -60,23 +60,10 @@ const ResumeBuilder = () => {
   };
 
   const downloadPDF = async () => {
-    try {
-      const response = await customFetch.get('/student/resume/download', {
-        responseType: 'blob',
-      });
-      const url = window.URL.createObjectURL(response.data);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `resume-${resumeData?.header?.firstName || 'Resume'}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentElement.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Resume downloaded successfully!');
-    } catch (error) {
-      console.error('Download error:', error);
-      toast.error(error?.response?.data?.message || 'Failed to download resume');
-    }
+    // Uses the browser's native print-to-pdf which preserves layout perfectly
+    // and keeps links clickable, using our `@media print` CSS rules.
+    window.print();
+    toast.success('Please select "Save as PDF" in the print dialog');
   };
 
   if (isLoading) {

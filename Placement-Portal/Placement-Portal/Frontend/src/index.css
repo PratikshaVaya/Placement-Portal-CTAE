@@ -10,3 +10,35 @@
 .job-markdown strong {
     font-weight: 500;
 }
+
+@media print {
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+  
+  #resume-print-area, #resume-print-area * {
+    visibility: visible;
+  }
+  
+  #resume-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0.5in;
+    box-sizing: border-box;
+    background: white;
+  }
+
+  #resume-print-area {
+    page-break-after: avoid;
+    page-break-before: avoid;
+    break-inside: avoid;
+  }
+}
