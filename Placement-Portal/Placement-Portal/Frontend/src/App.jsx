@@ -25,6 +25,7 @@ import {
   AdminAnalytics,
   AdminSettings,
   ResumeBuilder,
+  AIResumeAnalyzer,
   StudentAnnouncements,
   StudentPasswordReset,
   CompanyPasswordChange,
@@ -107,6 +108,10 @@ const router = createBrowserRouter([
         path: 'resume',
         element: <ResumeBuilder />,
         loader: resumeBuilderLoader(queryClient),
+      },
+      {
+        path: 'ai-resume',
+        element: <AIResumeAnalyzer />,
       },
       {
         path: 'announcements',

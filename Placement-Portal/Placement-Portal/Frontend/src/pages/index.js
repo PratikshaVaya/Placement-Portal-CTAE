@@ -11,6 +11,7 @@ export { default as CompanyDashboard } from './CompanyDashboard';
 export { default as StudentDetails } from './StudentDetails';
 export { default as StudentApplications } from './StudentApplications';
 export { default as ResumeBuilder } from './ResumeBuilder';
+export { default as AIResumeAnalyzer } from './AIResumeAnalyzer';
 export { default as JobsPage } from './Jobs';
 export { default as JobApplications } from './JobApplications';
 export { default as SingleJob } from './SingleJob';

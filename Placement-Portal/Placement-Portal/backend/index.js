@@ -43,6 +43,7 @@ const courseRouter = require('./routes/courseRoutes');
 const noticeRouter = require('./routes/noticeRoutes');
 const adminRouter = require('./routes/adminRoutes');
 const companyRouter = require('./routes/companyRoutes');
+const aiResumeRouter = require('./routes/aiResumeRoutes');
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -96,6 +97,13 @@ app.use('/api/v1/admin', [
 ]);
 
 app.use('/api/v1/company', [authenticateUser, companyRouter]);
+
+// AI Resume Analyzer (independent module — student auth required)
+app.use('/api/v1/ai-resume', [
+  authenticateUser,
+  authorizeRoles('student'),
+  aiResumeRouter,
+]);
 
 app.use(notFoundHandler);
 app.use(errorHandlerMiddleware);

@@ -3,5 +3,6 @@ export const options = [
   { id: 2, text: 'jobs', href: 'jobs' },
   { id: 3, text: 'applications', href: 'applications' },
   { id: 4, text: 'resume', href: 'resume' },
-  { id: 5, text: 'announcements', href: 'announcements' },
+  { id: 5, text: 'ai analyzer', href: 'ai-resume' },
+  { id: 6, text: 'announcements', href: 'announcements' },
 ];
