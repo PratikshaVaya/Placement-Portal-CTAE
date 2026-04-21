@@ -5,16 +5,18 @@ const Textarea = ({
   name,
   placeholder,
   defaultValue,
-  labelColor = 'text-base-300',
+  className = '',
+  labelColor = 'text-slate-300',
 }) => {
-  const labelClass = 'font-medium capitalize ' + 'text-' + labelColor;
   return (
-    <div className="form-control">
-      <label htmlFor={name} className="label">
-        <span className={labelClass}>{label}</span>
+    <div className="form-control w-full">
+      <label htmlFor={name} className="label py-1.5">
+        <span className={`text-sm font-semibold capitalize ${labelColor}`}>
+          {label}
+        </span>
       </label>
       <textarea
-        className="textarea textarea-lg textarea-bordered whitespace-pre-line p-2"
+        className={`textarea textarea-bordered whitespace-pre-line p-4 w-full transition-all duration-200 ${className}`}
         placeholder={placeholder}
         name={name}
         defaultValue={defaultValue}

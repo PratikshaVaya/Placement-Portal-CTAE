@@ -35,7 +35,7 @@ const Navbar = ({ options }) => {
 
       if (!isParentMenu)
         return (
-          <li className="capitalize text-black" key={id}>
+          <li className="capitalize text-slate-200 hover:text-white" key={id}>
             <NavLink to={href} end>
               {text}
             </NavLink>
@@ -45,10 +45,12 @@ const Navbar = ({ options }) => {
         return (
           <li key={id}>
             <details>
-              <summary className="capitalize text-black">{text}</summary>
-              <ul className="p-2 z-10">
+              <summary className="capitalize text-slate-200 hover:text-white">{text}</summary>
+              <ul className="p-2 z-10 bg-slate-800 rounded-lg border border-white/10 shadow-xl text-slate-200 min-w-max">
                 {subMenus.map((menu) => (
-                  <li key={menu.id}>{menu.element}</li>
+                  <li key={menu.id} className="hover:text-white hover:bg-white/10 rounded-md transition-colors">
+                    {menu.element}
+                  </li>
                 ))}
               </ul>
             </details>
@@ -58,7 +60,7 @@ const Navbar = ({ options }) => {
   }
 
   return (
-    <div className="navbar bg-green-200">
+    <div className="navbar bg-slate-900/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
       <div className="navbar-start ml-4">
         <div className="dropdown">
           <label tabIndex={0} className="btn btn-ghost lg:hidden">
@@ -79,12 +81,12 @@ const Navbar = ({ options }) => {
           </label>
           <ul
             tabIndex={0}
-            className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
+            className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-slate-800 border border-white/10 rounded-box w-52"
           >
             {returnOptions()}
           </ul>
         </div>
-        <p className="normal-case text-black text-xl">Hello, {userName}</p>
+        <p className="normal-case text-slate-200 font-medium tracking-wide text-xl">Hello, {userName}</p>
       </div>
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1">{returnOptions()}</ul>
@@ -101,8 +103,8 @@ const Navbar = ({ options }) => {
             Create Job
           </button>
         )}
-        <button className="p-4 hover:text-red-500 text-black" onClick={logout}>
-          <FaPowerOff />
+        <button className="p-4 text-slate-300 hover:text-red-400 transition-colors" onClick={logout}>
+          <FaPowerOff size={18} />
         </button>
       </div>
     </div>

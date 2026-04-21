@@ -67,28 +67,32 @@ const Announcements = () => {
   };
 
   return (
-    <div className="p-4 space-y-8">
-      <div>
-        <h3 className="mb-4 text-2xl font-semibold tracking-wide underline">
-          Announcements / Broadcast
-        </h3>
+    <div className="flex flex-col gap-8 text-slate-200">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Announcements / Broadcast</h1>
+        <p className="text-slate-400 text-base md:text-lg">Send urgent updates and important notices to students</p>
+      </div>
+
+      {/* CREATE ANNOUNCEMENT FORM */}
+      <div className="p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg">
+        <h4 className="text-lg font-semibold text-white mb-6 border-b border-white/10 pb-2">New Broadcast</h4>
         <Form
           method="post"
           encType="multipart/form-data"
           name="announcementForm"
-          className="grid gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+          className="grid gap-6"
         >
           <input type="hidden" name="intent" value="createAnnouncement" />
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Title</span>
+                <span className="label-text text-slate-300 font-medium">Title</span>
               </label>
               <input
                 type="text"
                 name="noticeTitle"
-                className="input input-bordered"
+                className="input input-bordered bg-slate-800/50 border-white/10 text-white focus:border-indigo-500 focus:bg-slate-800 transition-all"
                 placeholder="Announcement title"
                 required
               />
@@ -96,11 +100,11 @@ const Announcements = () => {
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Target Type</span>
+                <span className="label-text text-slate-300 font-medium">Target Type</span>
               </label>
               <select
                 name="targetType"
-                className="select select-bordered"
+                className="select select-bordered bg-slate-800/50 border-white/10 text-white focus:border-indigo-500 focus:bg-slate-800 transition-all"
                 value={targetType}
                 onChange={handleTargetTypeChange}
                 required
@@ -117,12 +121,12 @@ const Announcements = () => {
           {targetType !== 'all' && (
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Target Course</span>
+                <span className="label-text text-slate-300 font-medium">Target Course</span>
               </label>
               <select
                 name="receivingCourse"
                 id="announcementCourse"
-                className="select select-bordered"
+                className="select select-bordered bg-slate-800/50 border-white/10 text-white focus:border-indigo-500 focus:bg-slate-800 transition-all"
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
                 required
@@ -139,11 +143,11 @@ const Announcements = () => {
 
           <div className="form-control">
             <label className="label">
-              <span className="label-text font-medium">Message</span>
+              <span className="label-text text-slate-300 font-medium">Message</span>
             </label>
             <textarea
               name="noticeBody"
-              className="textarea textarea-bordered h-36"
+              className="textarea textarea-bordered bg-slate-800/50 border-white/10 text-white h-36 focus:border-indigo-500 focus:bg-slate-800 transition-all"
               placeholder="Write the announcement message here"
               required
             />
@@ -152,30 +156,30 @@ const Announcements = () => {
           {(targetType === 'branch' || targetType === 'branch_batch') && (
             <div className="form-control">
               <label className="label justify-between gap-2">
-                <span className="label-text font-medium">Branches</span>
+                <span className="label-text text-slate-300 font-medium">Branches</span>
                 <button
                   type="button"
-                  className="btn btn-xs btn-ghost"
+                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
                   onClick={() => selectAll('receivingDepartments')}
                 >
                   Select all
                 </button>
               </label>
-              <div className="flex flex-wrap gap-3 rounded border border-gray-200 p-3">
+              <div className="flex flex-wrap gap-3 rounded-xl border border-white/10 bg-slate-800/30 p-4">
                 {deptOptions.length ? (
                   deptOptions.map((option) => (
-                    <label key={option.value} className="label cursor-pointer gap-2">
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
                       <input
                         type="checkbox"
                         name="receivingDepartments"
                         value={option.value}
-                        className="checkbox"
+                        className="checkbox checkbox-xs checkbox-primary border-white/30"
                       />
-                      <span className="label-text">{option.text}</span>
+                      <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{option.text}</span>
                     </label>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500">Choose a course to load branches.</p>
+                  <p className="text-sm text-slate-500 italic">Choose a course to load branches.</p>
                 )}
               </div>
             </div>
@@ -184,124 +188,144 @@ const Announcements = () => {
           {(targetType === 'batch' || targetType === 'branch_batch') && (
             <div className="form-control">
               <label className="label justify-between gap-2">
-                <span className="label-text font-medium">Batches</span>
+                <span className="label-text text-slate-300 font-medium">Batches</span>
                 <button
                   type="button"
-                  className="btn btn-xs btn-ghost"
+                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
                   onClick={() => selectAll('receivingBatches')}
                 >
                   Select all
                 </button>
               </label>
-              <div className="flex flex-wrap gap-3 rounded border border-gray-200 p-3">
+              <div className="flex flex-wrap gap-3 rounded-xl border border-white/10 bg-slate-800/30 p-4">
                 {batchOptions.length ? (
                   batchOptions.map((option) => (
-                    <label key={option.value} className="label cursor-pointer gap-2">
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
                       <input
                         type="checkbox"
                         name="receivingBatches"
                         value={option.value}
-                        className="checkbox"
+                        className="checkbox checkbox-xs checkbox-primary border-white/30"
                       />
-                      <span className="label-text">{option.text}</span>
+                      <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{option.text}</span>
                     </label>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500">Choose a course to load batches.</p>
+                  <p className="text-sm text-slate-500 italic">Choose a course to load batches.</p>
                 )}
               </div>
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2 items-end">
             <div className="form-control">
-              <label className="label cursor-pointer gap-3">
-                <input type="checkbox" name="isUrgent" className="checkbox" value="true" />
-                <span className="label-text font-medium">Mark as urgent</span>
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input type="checkbox" name="isUrgent" className="checkbox checkbox-error border-white/30" value="true" />
+                <span className="text-slate-300 group-hover:text-white transition-colors font-medium">Mark as urgent</span>
               </label>
             </div>
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-medium">Attachment (optional)</span>
+                <span className="label-text text-slate-300 font-medium">Attachment (optional)</span>
               </label>
-              <input type="file" name="noticeFile" className="file-input file-input-bordered" />
+              <input 
+                type="file" 
+                name="noticeFile" 
+                className="file-input file-input-bordered bg-slate-800/50 border-white/10 text-slate-200 file-input-sm w-full" 
+              />
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <button type="submit" className="btn btn-primary">
-              Publish announcement
+          <div className="flex flex-wrap items-center gap-4 mt-2">
+            <button 
+              type="submit" 
+              className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all shadow-lg shadow-indigo-500/20"
+            >
+              Publish Announcement
             </button>
-            <span id="announcementFormError" className="text-sm text-error" />
+            <span id="announcementFormError" className="text-sm text-rose-400" />
           </div>
         </Form>
       </div>
 
-      <div>
-        <h4 className="mb-4 text-xl font-semibold">Recent Broadcasts</h4>
+      {/* RECENT ANNOUNCEMENTS */}
+      <div className="space-y-6">
+        <h4 className="text-xl font-bold text-white tracking-wide">Recent Broadcasts</h4>
         {isLoading ? (
-          <p className="text-sm text-gray-500">Loading announcements...</p>
+          <div className="py-10 text-center">
+            <span className="loading loading-spinner loading-lg text-indigo-500"></span>
+            <p className="mt-4 text-slate-400">Loading announcements...</p>
+          </div>
         ) : announcements.length ? (
-          <div className="space-y-4">
+          <div className="grid gap-6">
             {announcements.map((announcement) => (
               <article
                 key={announcement._id}
-                className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+                className="p-6 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg hover:bg-white/[0.08] transition-all"
               >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h5 className="text-lg font-semibold">{announcement.noticeTitle}</h5>
-                    {announcement.isUrgent && (
-                      <span className="badge badge-error mt-2 inline-block">Urgent</span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm text-gray-500">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <h5 className="text-xl font-bold text-white tracking-tight">{announcement.noticeTitle}</h5>
+                      {announcement.isUrgent && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 uppercase tracking-widest">Urgent</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400">
                       {new Date(announcement.createdAt).toLocaleString()}
-                    </span>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline btn-error"
-                      onClick={() => handleDeleteAnnouncement(announcement._id)}
-                    >
-                      Delete
-                    </button>
+                    </p>
                   </div>
+                  <button
+                    type="button"
+                    className="px-3 py-1 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-medium border border-rose-500/20 transition-all self-start sm:self-auto"
+                    onClick={() => handleDeleteAnnouncement(announcement._id)}
+                  >
+                    Delete Broadcast
+                  </button>
                 </div>
-                <p className="mt-3 text-gray-700">{announcement.noticeBody}</p>
+                
+                <p className="mt-4 text-slate-300 leading-relaxed text-base">{announcement.noticeBody}</p>
+                
                 {announcement.noticeFile && (
                   <a
                     href={announcement.noticeFile}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-3 inline-block text-sm text-primary hover:underline"
+                    className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 text-sm font-medium border border-indigo-500/20 transition-all"
                   >
-                    View attachment
+                    View Attachment
                   </a>
                 )}
-                <div className="mt-4 grid gap-2 sm:grid-cols-3 text-sm text-gray-600">
-                  <div>
-                    <span className="font-semibold">Course:</span>{' '}
-                    {announcement.receivingCourse?.courseName || 'All'}
+                
+                <div className="mt-6 pt-4 border-t border-white/5 grid gap-4 sm:grid-cols-3 text-xs text-slate-400 uppercase tracking-wide">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500">Course</span>
+                    <span className="text-slate-200 font-medium truncate">{announcement.receivingCourse?.courseName || 'All Students'}</span>
                   </div>
-                  <div>
-                    <span className="font-semibold">Branches:</span>{' '}
-                    {announcement.receivingDepartments
-                      ?.map((dept) => dept.departmentName)
-                      .join(', ') || 'All'}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500">Branches</span>
+                    <span className="text-slate-200 font-medium truncate">
+                      {announcement.receivingDepartments
+                        ?.map((dept) => dept.departmentName)
+                        .join(', ') || 'All Branches'}
+                    </span>
                   </div>
-                  <div>
-                    <span className="font-semibold">Batches:</span>{' '}
-                    {announcement.receivingBatches
-                      ?.map((batch) => batch.batchYear)
-                      .join(', ') || 'All'}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500">Batches</span>
+                    <span className="text-slate-200 font-medium truncate">
+                      {announcement.receivingBatches
+                        ?.map((batch) => batch.batchYear)
+                        .join(', ') || 'All Batches'}
+                    </span>
                   </div>
                 </div>
               </article>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">No announcements have been published yet.</p>
+          <div className="py-12 text-center rounded-2xl border border-white/5 bg-white/5">
+            <p className="text-slate-400">No announcements have been published yet.</p>
+          </div>
         )}
       </div>
     </div>

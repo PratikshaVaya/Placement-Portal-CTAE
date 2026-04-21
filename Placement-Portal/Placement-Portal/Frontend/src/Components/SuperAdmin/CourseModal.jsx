@@ -36,113 +36,115 @@ const CourseModal = () => {
   }, [action, course?.courseId]);
 
   return (
-    <dialog id="courseModal" className="modal">
-      <div className="modal-box pb-0">
-        <h3 className="font-bold text-lg underline capitalize">
-          {action} course
-        </h3>
-        <Form
-          method="POST"
-          className="mt-2 flex flex-col gap-4"
-          name="courseForm"
-        >
-          {action === 'update' && (
-            <input
-              type="text"
-              name="courseId"
-              defaultValue={course?.courseId}
-              hidden
-            />
-          )}
-          <FormInput
-            label="course name"
-            name="courseName"
-            type="text"
-            defaultValue={course?.courseName}
-          />
-
-          <SelectInput
-            label="course level"
-            name="courseLevel"
-            options={[
-              {
-                text: 'Graduation',
-                value: 'graduation',
-              },
-              {
-                text: 'Post Graduation',
-                value: 'postGraduation',
-              },
-            ]}
-            defaultValue={course?.courseLevel}
-          />
-
-          <NumberInput
-            label="regular year count"
-            name="regularYearsCount"
-            minValue={1}
-            defaultValue={course?.regularYearsCount}
-          />
-
-          <NumberInput
-            label="regular semesters count"
-            name="regularSemestersCount"
-            minValue={1}
-            defaultValue={course?.regularSemestersCount}
-          />
-
-          <div className="form-control">
-            <label className="label">
-              <span className="font-medium">Is Lateral Entry Allowed?</span>
-            </label>
-            <label className="label justify-normal gap-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                name="isLateralAllowed"
-                className="checkbox"
-                checked={isLateralEntry}
-                onChange={(e) => setIsLateralEntry(e.currentTarget.checked)}
-              />
-              <span className="label-text">Yes</span>
-            </label>
-          </div>
-
-          {isLateralEntry && (
-            <>
-              <LateralCountField
-                key={`lyc-${course?.courseId ?? 'new'}`}
-                label="Lateral Year Count"
-                name="lateralYearsCount"
-                initValue={course?.lateralYearsCount}
-              />
-
-              <LateralCountField
-                key={`lsc-${course?.courseId ?? 'new'}`}
-                label="Lateral Semesters Count"
-                name="lateralSemestersCount"
-                initValue={course?.lateralSemestersCount}
-              />
-            </>
-          )}
-
-          <div id="courseFormError" className="text-red-500"></div>
-
-          <button
-            type="submit"
-            className="btn btn-success text-white capitalize self-center btn-sm h-9 px-4"
-            name="intent"
-            value={`${action}Course`}
-          >
-            {action}
-          </button>
-        </Form>
-        <div className="modal-action">
+    <dialog id="courseModal" className="modal backdrop-blur-sm">
+      <div className="modal-box bg-slate-900 border border-white/10 shadow-2xl p-0 overflow-hidden max-w-xl">
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex justify-between items-center">
+          <h3 className="font-bold text-xl text-white capitalize">
+            {action} Course
+          </h3>
           <form method="dialog">
-            {/* if there is a button in form, it will close the modal */}
-            <button className="btn btn-lg btn-circle btn-ghost absolute right-2 top-2">
-              ✕
+            <button className="text-white/70 hover:text-white transition-colors">
+              <span className="text-2xl">✕</span>
             </button>
           </form>
+        </div>
+        
+        <div className="p-6">
+          <Form
+            method="POST"
+            className="flex flex-col gap-6"
+            name="courseForm"
+          >
+            {action === 'update' && (
+              <input
+                type="text"
+                name="courseId"
+                defaultValue={course?.courseId}
+                hidden
+              />
+            )}
+            
+            <div className="grid gap-6">
+              <FormInput
+                label="Course Name"
+                name="courseName"
+                type="text"
+                defaultValue={course?.courseName}
+                className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+              />
+
+              <SelectInput
+                label="Course Level"
+                name="courseLevel"
+                options={[
+                  { text: 'Graduation', value: 'graduation' },
+                  { text: 'Post Graduation', value: 'postGraduation' },
+                ]}
+                defaultValue={course?.courseLevel}
+                className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <NumberInput
+                  label="Regular Years"
+                  name="regularYearsCount"
+                  minValue={1}
+                  defaultValue={course?.regularYearsCount}
+                  className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+                />
+
+                <NumberInput
+                  label="Regular Semesters"
+                  name="regularSemestersCount"
+                  minValue={1}
+                  defaultValue={course?.regularSemestersCount}
+                  className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    name="isLateralAllowed"
+                    className="checkbox checkbox-primary border-white/30"
+                    checked={isLateralEntry}
+                    onChange={(e) => setIsLateralEntry(e.currentTarget.checked)}
+                  />
+                  <span className="text-slate-200 font-medium group-hover:text-white transition-colors">Is Lateral Entry Allowed?</span>
+                </label>
+              </div>
+
+              {isLateralEntry && (
+                <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 animate-in fade-in slide-in-from-top-2">
+                  <LateralCountField
+                    key={`lyc-${course?.courseId ?? 'new'}`}
+                    label="Lateral Years"
+                    name="lateralYearsCount"
+                    initValue={course?.lateralYearsCount}
+                  />
+
+                  <LateralCountField
+                    key={`lsc-${course?.courseId ?? 'new'}`}
+                    label="Lateral Semesters"
+                    name="lateralSemestersCount"
+                    initValue={course?.lateralSemestersCount}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div id="courseFormError" className="text-rose-400 text-sm font-medium empty:hidden"></div>
+
+            <button
+              type="submit"
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-lg shadow-indigo-500/20"
+              name="intent"
+              value={`${action}Course`}
+            >
+              {action === 'add' ? 'Create Course' : 'Update Course'}
+            </button>
+          </Form>
         </div>
       </div>
     </dialog>

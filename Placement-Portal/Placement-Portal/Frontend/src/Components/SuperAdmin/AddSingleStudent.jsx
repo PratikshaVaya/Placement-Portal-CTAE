@@ -33,104 +33,129 @@ const AddSingleStudent = () => {
   }, [action, student?._id, courseId]);
 
   return (
-    <dialog id="addSingleStudentModal" className="modal">
-      <div className="modal-box pb-0">
-        <h3 className="font-bold text-lg underline capitalize">
-          {action} Student
-        </h3>
-        <Form
-          method="POST"
-          className="mt-2 flex flex-col gap-4"
-          name="addSingleStudentForm"
-        >
-          {action === 'update' && (
-            <input
-              type="text"
-              name="studentId"
-              defaultValue={student?._id}
-              hidden
-            />
-          )}
-          <FormInput
-            label="Name"
-            name="name"
-            type="text"
-            defaultValue={student?.name}
-            labelColor='text-base-300'
-          />
-
-          {action === 'add' && (
-            <>
-              <FormInput label="Email" name="email" type="email" labelColor='text-base-300' />
-
-              <FormInput label="Password" name="password" type="password"  labelColor='text-base-300'/>
-
-              <FormInput
-                label="Confirm Password"
-                name="confirmPassword"
-                type="password"
-                labelColor='text-base-300'
-              />
-            </>
-          )}
-
-          <FormInput
-            label="Roll No"
-            name="rollNo"
-            type="text"
-            labelColor='text-base-300'
-            defaultValue={student?.rollNo}
-          />
-
-          <CheckboxInput
-            label="Lateral Entry"
-            name="isLateralEntry"
-            options={[{ text: 'Yes', value: 'yes' }]}
-            defaultValues={student?.isLateralEntry ? ['yes'] : []}
-          />
-
-          <SelectInput
-            label="Select Course"
-            options={getCourseOptions(courseOptions)}
-            id="createStudentCourse"
-            changeFn={handleCourseChange}
-            name="courseId"
-            defaultValue={courseId}
-          />
-
-          <SelectInput
-            label="Select Deparments"
-            options={deptOptions}
-            name="departmentId"
-            emptyMessage="Select a course!"
-            defaultValue={student?.departmentId}
-          />
-
-          <SelectInput
-            label="Select Batch"
-            options={batchOptions}
-            name="batchId"
-            emptyMessage="No batches found for this course!"
-            defaultValue={student?.batchId}
-          />
-
-          <div id="addSingleStudentFormError" className="text-red-500"></div>
-          <button
-            type="submit"
-            className="btn btn-success text-white capitalize self-center btn-sm h-9 px-4"
-            name="intent"
-            value={`${action}SingleStudent`}
-          >
-            {action}
-          </button>
-        </Form>
-        <div className="modal-action">
+    <dialog id="addSingleStudentModal" className="modal backdrop-blur-sm">
+      <div className="modal-box bg-slate-900 border border-white/10 shadow-2xl p-0 overflow-hidden max-w-2xl custom-scrollbar">
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex justify-between items-center">
+          <h3 className="font-bold text-xl text-white capitalize">
+            {action} Student
+          </h3>
           <form method="dialog">
-            {/* if there is a button in form, it will close the modal */}
-            <button className="btn btn-lg btn-circle btn-ghost absolute right-2 top-2">
-              ✕
+            <button className="text-white/70 hover:text-white transition-colors">
+              <span className="text-2xl">✕</span>
             </button>
           </form>
+        </div>
+
+        <div className="p-6">
+          <Form
+            method="POST"
+            className="flex flex-col gap-6"
+            name="addSingleStudentForm"
+          >
+            {action === 'update' && (
+              <input
+                type="text"
+                name="studentId"
+                defaultValue={student?._id}
+                hidden
+              />
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormInput
+                label="Full Name"
+                name="name"
+                type="text"
+                defaultValue={student?.name}
+                className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+              />
+
+              <FormInput
+                label="Roll Number"
+                name="rollNo"
+                type="text"
+                defaultValue={student?.rollNo}
+                className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+              />
+
+              {action === 'add' && (
+                <>
+                  <div className="md:col-span-2">
+                    <FormInput 
+                      label="Email Address" 
+                      name="email" 
+                      type="email" 
+                      className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <FormInput 
+                    label="Password" 
+                    name="password" 
+                    type="password" 
+                    className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+                  />
+
+                  <FormInput
+                    label="Confirm Password"
+                    name="confirmPassword"
+                    type="password"
+                    className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+                  />
+                </>
+              )}
+
+              <div className="md:col-span-2 p-4 rounded-xl bg-white/5 border border-white/5">
+                <CheckboxInput
+                  label="Academic Entry Type"
+                  name="isLateralEntry"
+                  options={[{ text: 'Lateral Entry (Direct 2nd Year)', value: 'yes' }]}
+                  defaultValues={student?.isLateralEntry ? ['yes'] : []}
+                />
+              </div>
+
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <SelectInput
+                  label="Course"
+                  options={getCourseOptions(courseOptions)}
+                  id="createStudentCourse"
+                  changeFn={handleCourseChange}
+                  name="courseId"
+                  defaultValue={courseId}
+                  className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+                />
+
+                <SelectInput
+                  label="Department"
+                  options={deptOptions}
+                  name="departmentId"
+                  emptyMessage="Select Course First"
+                  defaultValue={student?.departmentId}
+                  className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+                />
+
+                <SelectInput
+                  label="Batch Year"
+                  options={batchOptions}
+                  name="batchId"
+                  emptyMessage="Select Course First"
+                  defaultValue={student?.batchId}
+                  className="bg-slate-800/50 border-white/10 text-white focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div id="addSingleStudentFormError" className="text-rose-400 text-sm font-medium empty:hidden"></div>
+            
+            <button
+              type="submit"
+              className="w-full py-3 mt-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-lg shadow-indigo-500/20"
+              name="intent"
+              value={`${action}SingleStudent`}
+            >
+              {action === 'add' ? 'Create Student Profile' : 'Update Profile Details'}
+            </button>
+          </Form>
         </div>
       </div>
     </dialog>

@@ -205,13 +205,15 @@ const AdminDashboard = () => {
   const dispatch = useDispatch();
 
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-950 text-slate-200 font-sans flex flex-col">
       <Navbar options={getOptions(dispatch)} />
       <CourseModal />
       <CompanyModal />
       <AddSingleStudent />
-      <Outlet />
-    </>
+      <div className="flex-1 p-6 md:p-8 lg:p-10 w-full max-w-7xl mx-auto">
+        <Outlet />
+      </div>
+    </div>
   );
 };
 export default AdminDashboard;

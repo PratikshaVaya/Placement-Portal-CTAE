@@ -6,20 +6,19 @@ const DateInput = ({
   minDate,
   maxDate,
   isRequired = true,
-  labelColor = 'text-base-300',
+  className = '',
+  labelColor = 'text-slate-300',
 }) => {
-  const labelClass = 'font-medium capitalize ' + 'text-' + labelColor;
-
   return (
-    <div className="form-control">
-      <label htmlFor={name} className="label">
-        <span className={labelClass}>{label}</span>
+    <div className="form-control w-full">
+      <label htmlFor={name} className="label py-1.5">
+        <span className={`text-sm font-semibold capitalize ${labelColor}`}>{label}</span>
       </label>
       <input
         type="date"
         name={name}
         defaultValue={defaultValue}
-        className={`input input-bordered ${size}`}
+        className={`input input-bordered w-full transition-all duration-200 bg-slate-800/50 text-white border-white/10 focus:border-indigo-500 ${size} ${className}`}
         min={minDate}
         max={maxDate}
         required={isRequired}

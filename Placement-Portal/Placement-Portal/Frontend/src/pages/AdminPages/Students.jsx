@@ -115,55 +115,61 @@ const Students = () => {
   };
 
   return (
-    <div className="p-4">
-      <h3 className="my-2 underline text-2xl text-center tracking-wide font-medium">
-        Students
-      </h3>
+    <div className="flex flex-col gap-8 text-slate-200">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Students Management</h1>
+        <p className="text-slate-400 text-base md:text-lg">Filter, bulk import, and manage student records</p>
+      </div>
 
       {/* FILTERS */}
-      <Form className="flex flex-col">
-        <div className="px-4 flex flex-wrap justify-between">
-          <div>
-            <SelectInput
-              label="Select Course"
-              options={getCourseOptions(courseOptions)}
-              id="createJobCourse"
-              changeFn={handleCourseChange}
-              name="course"
-            />
+      <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg">
+        <h4 className="text-lg font-semibold text-white mb-6 border-b border-white/10 pb-2">Filter Students</h4>
+        <Form className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <SelectInput
+                label="Select Course"
+                options={getCourseOptions(courseOptions)}
+                id="createJobCourse"
+                changeFn={handleCourseChange}
+                name="course"
+                containerClass="w-full"
+              />
+            </div>
+            <div>
+              <CheckboxInput
+                label="Select Departments"
+                options={deptOptions}
+                name="departments"
+                emptyMsg="Select a course!"
+              />
+            </div>
+            <div>
+              <CheckboxInput
+                label="Batches"
+                options={batchOptions}
+                name="batches"
+                emptyMsg="no batches found!"
+              />
+            </div>
           </div>
-          <div>
-            <CheckboxInput
-              label="Select Deparments"
-              options={deptOptions}
-              name="departments"
-              emptyMsg="Select a course!"
-            />
-          </div>
-          <div>
-            <CheckboxInput
-              label="Batches"
-              options={batchOptions}
-              name="batches"
-              emptyMsg="no batches found!"
-            />
-          </div>
-        </div>
-        <button
-          type="submit"
-          className="btn btn-success self-end capitalize text-white btn-sm px-4"
-        >
-          Filter
-        </button>
-      </Form>
+          <button
+            type="submit"
+            className="self-end px-6 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors shadow-lg shadow-indigo-500/20"
+          >
+            Apply Filters
+          </button>
+        </Form>
+      </div>
 
-      <div className="my-4 p-4 border rounded-lg bg-base-100">
-        <h4 className="text-lg font-semibold mb-3">Bulk Student Operations</h4>
-        <div className="flex flex-wrap gap-3 items-center mb-3">
+      {/* BULK OPERATIONS */}
+      <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg">
+        <h4 className="text-lg font-semibold text-white mb-6 border-b border-white/10 pb-2">Bulk Student Operations</h4>
+        <div className="flex flex-wrap gap-4 items-center mb-6">
           <input
             type="file"
             accept=".csv"
-            className="file-input file-input-bordered file-input-sm w-full max-w-xs"
+            className="file-input file-input-bordered file-input-sm w-full max-w-xs bg-slate-800 text-slate-200 border-white/20 focus:border-indigo-500"
             onChange={(event) => {
               const file = event.target.files?.[0];
               setImportFile(file || null);
@@ -172,24 +178,27 @@ const Students = () => {
             }}
           />
           <button
-            className="btn btn-sm btn-primary"
+            className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-colors shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handlePreviewImport}
             disabled={!importFile || isPreviewLoading}
           >
             {isPreviewLoading ? 'Previewing...' : 'Preview Before Upload'}
           </button>
           <button
-            className="btn btn-sm btn-success"
+            className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition-colors shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleConfirmImport}
             disabled={!importFile || !previewData || isImportLoading}
           >
             {isImportLoading ? 'Uploading...' : 'Confirm Upload'}
           </button>
-          <button className="btn btn-sm btn-neutral" onClick={handleExportStudents}>
+          <button 
+            className="px-4 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium text-sm transition-colors border border-white/10"
+            onClick={handleExportStudents}
+          >
             Export Students (CSV)
           </button>
           <a
-            className="btn btn-sm btn-outline"
+            className="px-4 py-1.5 rounded-lg bg-transparent hover:bg-white/5 text-slate-300 font-medium text-sm transition-colors border border-white/20"
             href={`${import.meta.env.VITE_API_URL}/admin/students/import/sample`}
             target="_blank"
             rel="noreferrer"
@@ -199,33 +208,33 @@ const Students = () => {
         </div>
 
         {previewData && (
-          <div className="my-3">
-            <p className="text-sm">
-              Total: {previewData.summary?.totalRows || 0} | Valid:{' '}
-              {previewData.summary?.validCount || 0} | Invalid:{' '}
-              {previewData.summary?.invalidCount || 0}
+          <div className="mb-6 p-4 rounded-xl bg-slate-800/50 border border-white/5">
+            <p className="text-sm text-slate-300">
+              Total: <span className="font-bold text-white">{previewData.summary?.totalRows || 0}</span> | Valid:{' '}
+              <span className="font-bold text-emerald-400">{previewData.summary?.validCount || 0}</span> | Invalid:{' '}
+              <span className="font-bold text-rose-400">{previewData.summary?.invalidCount || 0}</span>
             </p>
             {!!invalidRows.length && (
-              <p className="text-sm text-error">Invalid rows are highlighted below.</p>
+              <p className="text-sm text-rose-400 mt-2">Invalid rows are highlighted below.</p>
             )}
           </div>
         )}
 
         {importSummary && (
-          <div className="my-3">
-            <p className="text-sm font-medium">
-              Imported: {importSummary.summary?.importedCount || 0} | Failed:{' '}
-              {importSummary.summary?.failedCount || 0}
+          <div className="mb-6 p-4 rounded-xl bg-slate-800/50 border border-white/5">
+            <p className="text-sm font-medium text-slate-300">
+              Imported: <span className="font-bold text-emerald-400">{importSummary.summary?.importedCount || 0}</span> | Failed:{' '}
+              <span className="font-bold text-rose-400">{importSummary.summary?.failedCount || 0}</span>
             </p>
             {!!importSummary.summary?.forcePasswordResetCount && (
-              <p className="alert alert-warning mt-2 text-sm">
+              <div className="mt-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-200 text-sm">
                 {importSummary.summary.forcePasswordResetCount} imported student(s)
                 are marked as password reset required on first login.
-              </p>
+              </div>
             )}
             {!!importSummary.failedRows?.length && (
               <button
-                className="btn btn-xs btn-warning mt-2"
+                className="mt-4 px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium text-sm transition-colors shadow-lg shadow-rose-500/20"
                 onClick={() => downloadErrorCsv(importSummary.failedRows)}
               >
                 Download Error Report CSV
@@ -235,43 +244,45 @@ const Students = () => {
         )}
 
         {exportSummary && (
-          <p className="alert alert-info my-3 text-sm">
-            Latest export contains {exportSummary.forcePasswordResetCount} student(s)
+          <div className="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-200 text-sm">
+            Latest export contains <span className="font-bold">{exportSummary.forcePasswordResetCount}</span> student(s)
             with password reset required.
-          </p>
+          </div>
         )}
 
         {previewData?.previewRows?.length ? (
-          <div className="overflow-x-auto max-h-96">
-            <table className="table table-xs table-pin-rows">
-              <thead>
+          <div className="overflow-x-auto max-h-96 rounded-xl border border-white/10 bg-slate-900 custom-scrollbar">
+            <table className="w-full text-left text-sm text-slate-300">
+              <thead className="text-xs uppercase bg-slate-800/80 text-slate-400 sticky top-0 z-10 backdrop-blur-sm">
                 <tr>
-                  <th>Row</th>
-                  <th>Name</th>
-                  <th>Roll No</th>
-                  <th>Email</th>
-                  <th>Course</th>
-                  <th>Department</th>
-                  <th>Batch</th>
-                  <th>DOB</th>
-                  <th>Validation</th>
+                  <th className="px-4 py-3 font-medium">Row</th>
+                  <th className="px-4 py-3 font-medium">Name</th>
+                  <th className="px-4 py-3 font-medium">Roll No</th>
+                  <th className="px-4 py-3 font-medium">Email</th>
+                  <th className="px-4 py-3 font-medium">Course</th>
+                  <th className="px-4 py-3 font-medium">Department</th>
+                  <th className="px-4 py-3 font-medium">Batch</th>
+                  <th className="px-4 py-3 font-medium">DOB</th>
+                  <th className="px-4 py-3 font-medium">Validation</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-white/5">
                 {previewData.previewRows.map((row) => (
                   <tr
                     key={row.rowNumber}
-                    className={row.isValid ? 'bg-success/10' : 'bg-error/10'}
+                    className={`hover:bg-white/5 transition-colors ${row.isValid ? 'bg-emerald-500/5' : 'bg-rose-500/10'}`}
                   >
-                    <td>{row.rowNumber}</td>
-                    <td>{row.name}</td>
-                    <td>{row['roll no']}</td>
-                    <td>{row.email}</td>
-                    <td>{row.course}</td>
-                    <td>{row.department}</td>
-                    <td>{row.batch}</td>
-                    <td>{row.dob}</td>
-                    <td>{row.isValid ? 'Valid' : row.errors?.join(' | ')}</td>
+                    <td className="px-4 py-3">{row.rowNumber}</td>
+                    <td className="px-4 py-3 font-medium text-white">{row.name}</td>
+                    <td className="px-4 py-3">{row['roll no']}</td>
+                    <td className="px-4 py-3">{row.email}</td>
+                    <td className="px-4 py-3">{row.course}</td>
+                    <td className="px-4 py-3">{row.department}</td>
+                    <td className="px-4 py-3">{row.batch}</td>
+                    <td className="px-4 py-3">{row.dob}</td>
+                    <td className={`px-4 py-3 font-medium ${row.isValid ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {row.isValid ? 'Valid' : row.errors?.join(' | ')}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -281,8 +292,10 @@ const Students = () => {
       </div>
 
       {/* TABLE */}
-
-      <StudentsTable />
+      <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg">
+        <h4 className="text-lg font-semibold text-white mb-6 border-b border-white/10 pb-2">Student Directory</h4>
+        <StudentsTable />
+      </div>
     </div>
   );
 
