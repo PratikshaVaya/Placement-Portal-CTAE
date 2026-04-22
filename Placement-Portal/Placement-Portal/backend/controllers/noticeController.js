@@ -129,9 +129,14 @@ const updateNotice = async (req, res) => {
       'Notice title and body are required!'
     );
 
-  const notice = await NoticeModel.findOne({ _id: id, createdBy });
+  const notice = await NoticeModel.findById(id);
   if (!notice)
     throw new CustomAPIError.NotFoundError(`No notice found with id: ${id}`);
+
+  // Allow update if user is the creator OR an admin
+  if (notice.createdBy.toString() !== createdBy && req.user.role !== 'admin') {
+    throw new CustomAPIError.UnauthorizedError('Not authorized to update this notice');
+  }
 
   const {
     targetType: validatedTargetType,
@@ -194,9 +199,14 @@ const deleteNotice = async (req, res) => {
 
   if (!id?.trim()) throw new CustomAPIError.BadRequestError('Id is required');
 
-  const notice = await NoticeModel.findOne({ _id: id, createdBy });
+  const notice = await NoticeModel.findById(id);
   if (!notice)
     throw new CustomAPIError.NotFoundError(`No notice found with id: ${id}`);
+
+  // Allow deletion if user is the creator OR an admin
+  if (notice.createdBy.toString() !== createdBy && req.user.role !== 'admin') {
+    throw new CustomAPIError.UnauthorizedError('Not authorized to delete this notice');
+  }
 
   await NoticeModel.findByIdAndDelete(id);
 

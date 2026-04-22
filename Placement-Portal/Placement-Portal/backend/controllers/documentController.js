@@ -22,35 +22,23 @@ const viewDocument = async (req, res) => {
   }
 
   try {
-    // Extract public_id and other info from the URL to generate a SIGNED version
-    // Example: .../image/upload/v1234/folder/name.pdf
-    const urlParts = url.split('/');
-    const uploadIndex = urlParts.indexOf('upload');
-    
+    // Robust Public ID and Resource Type extraction
+    const uploadMatch = url.match(/\/(image|raw|video)\/upload\/(?:v\d+\/)?(.+)$/);
     let signedUrl = url;
-
-    if (uploadIndex !== -1) {
-      // Find the version (v1234) and extract everything after it
-      let publicIdWithExt = '';
-      for (let i = uploadIndex + 1; i < urlParts.length; i++) {
-        if (urlParts[i].startsWith('v') && !isNaN(urlParts[i].substring(1))) {
-          publicIdWithExt = urlParts.slice(i + 1).join('/');
-          break;
-        }
-      }
-
-      if (publicIdWithExt) {
-        // Strip extension to get public_id
-        const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
-        
-        // Generate a SIGNED URL using the SDK
-        signedUrl = cloudinary.url(publicId, {
-          sign_url: true,
-          type: 'upload',
-          resource_type: url.includes('/raw/') ? 'raw' : 'image',
-          secure: true,
-        });
-      }
+    
+    if (uploadMatch) {
+      const resourceType = uploadMatch[1];
+      const publicIdWithExt = uploadMatch[2];
+      // Strip extension to get public_id
+      const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+      
+      // Generate a SIGNED URL using the SDK
+      signedUrl = cloudinary.url(publicId, {
+        sign_url: true,
+        type: 'upload',
+        resource_type: resourceType,
+        secure: true,
+      });
     }
 
     const response = await axios({
