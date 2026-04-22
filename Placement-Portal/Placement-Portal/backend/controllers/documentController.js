@@ -1,6 +1,10 @@
 const axios = require('axios');
 const cloudinary = require('cloudinary').v2;
 const CustomAPIError = require('../errors');
+const JobApplicationModel = require('../models/JobApplication');
+const NoticeModel = require('../models/Notice');
+const UserModel = require('../models/User');
+const mongoose = require('mongoose');
 
 const viewDocument = async (req, res) => {
   const { url } = req.query;
@@ -21,22 +25,98 @@ const viewDocument = async (req, res) => {
     throw new CustomAPIError.UnauthorizedError('Invalid document source.');
   }
 
+  // --- AUTHORIZATION CHECK ---
+  const { userId, role, companyId } = req.user;
+
+  // 1. Admins have global access
+  if (role === 'admin') {
+    // Proceed
+  } else {
+    let isAuthorized = false;
+
+    // Check if it's the user's own profile photo
+    const user = await UserModel.findById(userId).select('photo courseId departmentId batchId');
+    if (user?.photo === url) {
+      isAuthorized = true;
+    }
+
+    // Check if it's a notice targeting this student (or anyone)
+    if (!isAuthorized) {
+      const notice = await NoticeModel.findOne({ noticeFile: url });
+      if (notice) {
+        if (notice.targetType === 'all') {
+          isAuthorized = true;
+        } else if (role === 'student') {
+          // Check targeting logic
+          const matchesCourse = !notice.receivingCourse || notice.receivingCourse.toString() === user.courseId?.toString();
+          const matchesDept = notice.receivingDepartments.length === 0 || notice.receivingDepartments.some(d => d.toString() === user.departmentId?.toString());
+          const matchesBatch = notice.receivingBatches.length === 0 || notice.receivingBatches.some(b => b.toString() === user.batchId?.toString());
+          
+          if (matchesCourse && matchesDept && matchesBatch) {
+            isAuthorized = true;
+          }
+        }
+      }
+    }
+
+    // Check if it's a resume or offer letter in an application
+    if (!isAuthorized) {
+      const application = await JobApplicationModel.findOne({
+        $or: [{ resume: url }, { offerLetterUrl: url }]
+      });
+
+      if (application) {
+        // Applicant can see their own
+        if (application.applicantId.toString() === userId) {
+          isAuthorized = true;
+        }
+        // Company admin for this company can see it
+        if (role === 'company_admin' && application.companyId.toString() === companyId) {
+          isAuthorized = true;
+        }
+      }
+    }
+
+    if (!isAuthorized) {
+      throw new CustomAPIError.UnauthorizedError('You are not authorized to view this document.');
+    }
+  }
+
   try {
-    // Robust Public ID and Resource Type extraction
-    const uploadMatch = url.match(/\/(image|raw|video)\/upload\/(?:v\d+\/)?(.+)$/);
+    // Robust parsing of Cloudinary URL parts
+    // Pattern: /cloud_name/resource_type/type/version/public_id.format
+    const cloudName = process.env.CLOUD_NAME;
+    const regex = new RegExp(`/${cloudName}/(image|raw|video)/(upload|private|authenticated)/(v\\d+/)?(.+)$`);
+    const match = url.match(regex);
+    
     let signedUrl = url;
     
-    if (uploadMatch) {
-      const resourceType = uploadMatch[1];
-      const publicIdWithExt = uploadMatch[2];
-      // Strip extension to get public_id
-      const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+    if (match) {
+      const resourceType = match[1];
+      const type = match[2];
+      const version = match[3] ? match[3].replace('v', '').replace('/', '') : undefined;
+      const publicIdWithExt = match[4];
       
-      // Generate a SIGNED URL using the SDK
+      // Separate publicId from extension if possible for image/video
+      // For 'raw' resources, publicId includes extension
+      let publicId = publicIdWithExt;
+      let format = undefined;
+      
+      if (resourceType !== 'raw') {
+        const lastDotIndex = publicIdWithExt.lastIndexOf('.');
+        if (lastDotIndex !== -1) {
+          publicId = publicIdWithExt.substring(0, lastDotIndex);
+          format = publicIdWithExt.substring(lastDotIndex + 1);
+        }
+      }
+
+      // Generate a SIGNED URL using the SDK with all preserved parameters
       signedUrl = cloudinary.url(publicId, {
         sign_url: true,
-        type: 'upload',
+        type: type,
         resource_type: resourceType,
+        version: version,
+        format: format,
         secure: true,
       });
     }

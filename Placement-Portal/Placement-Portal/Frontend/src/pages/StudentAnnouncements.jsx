@@ -80,7 +80,7 @@ const StudentAnnouncements = () => {
                   <Markdown 
                     remarkPlugins={[remarkBreaks, remarkGfm]}
                     components={{
-                      a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline transition-colors" />
+                      a: ({ ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline transition-colors" />
                     }}
                   >
                     {notice.noticeBody}
@@ -92,13 +92,13 @@ const StudentAnnouncements = () => {
                     <div className="flex flex-col">
                       <span className="text-[10px] uppercase tracking-widest text-slate-600 font-black mb-1">Target Branches</span>
                       <span className="text-slate-400 text-xs font-bold">
-                        {notice.receivingDepartments?.map((dept) => dept.departmentName).join(', ') || 'All Branches'}
+                        {notice.receivingDepartments?.map((dept) => dept.departmentName)?.join(', ') || 'All Branches'}
                       </span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[10px] uppercase tracking-widest text-slate-600 font-black mb-1">Target Batches</span>
                       <span className="text-slate-400 text-xs font-bold">
-                        {notice.receivingBatches?.map((batch) => batch.batchYear).join(', ') || 'All Batches'}
+                        {notice.receivingBatches?.map((batch) => batch.batchYear)?.join(', ') || 'All Batches'}
                       </span>
                     </div>
                   </div>
@@ -108,7 +108,7 @@ const StudentAnnouncements = () => {
                       className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-black text-slate-300 hover:bg-indigo-600/20 hover:text-indigo-400 hover:border-indigo-500/30 transition-all flex items-center gap-2"
                       href={getFileUrl(notice.noticeFile)}
                       target="_blank"
-                      rel="noopener"
+                      rel="noopener noreferrer"
                     >
                       <span>📎</span> View Attachment
                     </a>

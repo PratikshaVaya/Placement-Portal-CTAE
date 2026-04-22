@@ -373,7 +373,7 @@ const changeAdminPassword = async (req, res) => {
     );
   }
 
-  const admin = await UserModel.findById(req.user.userId);
+  const admin = await UserModel.findById(req.user.userId).select('+password');
   if (!admin) throw new CustomAPIError.NotFoundError('Admin not found');
 
   const isMatch = await admin.comparePassword(currentPassword);

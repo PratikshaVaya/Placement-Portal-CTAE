@@ -49,7 +49,7 @@ const login = async (req, res) => {
 }
   email = email.trim().toLowerCase();
 
-  const user = await UserModel.findOne({ email });
+  const user = await UserModel.findOne({ email }).select('+password');
 
   if (!user) {
     console.log('no user');

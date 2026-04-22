@@ -338,7 +338,7 @@ const Announcements = () => {
                   <Markdown
                     remarkPlugins={[remarkBreaks, remarkGfm]}
                     components={{
-                      a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline transition-colors" />
+                      a: ({ ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline transition-colors" />
                     }}
                   >
                     {announcement.noticeBody}
@@ -349,7 +349,7 @@ const Announcements = () => {
                   <a
                     href={getFileUrl(announcement.noticeFile)}
                     target="_blank"
-                    rel="noopener"
+                    rel="noopener noreferrer"
                     className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 text-sm font-medium border border-indigo-500/20 transition-all"
                   >
                     View Attachment
@@ -366,7 +366,7 @@ const Announcements = () => {
                     <span className="text-slate-200 font-medium truncate">
                       {announcement.receivingDepartments
                         ?.map((dept) => dept.departmentName)
-                        .join(', ') || 'All Branches'}
+                        ?.join(', ') || 'All Branches'}
                     </span>
                   </div>
                   <div className="flex flex-col gap-1">
@@ -374,7 +374,7 @@ const Announcements = () => {
                     <span className="text-slate-200 font-medium truncate">
                       {announcement.receivingBatches
                         ?.map((batch) => batch.batchYear)
-                        .join(', ') || 'All Batches'}
+                        ?.join(', ') || 'All Batches'}
                     </span>
                   </div>
                 </div>

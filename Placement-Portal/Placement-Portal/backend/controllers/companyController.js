@@ -491,7 +491,7 @@ const getOfferDetails = async (req, res) => {
 
 const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  const user = await UserModel.findById(req.user.userId);
+  const user = await UserModel.findById(req.user.userId).select('+password');
   if (!(await user.comparePassword(currentPassword))) throw new CustomAPIError.UnauthenticatedError('Invalid credentials');
   user.password = newPassword;
   await user.save();

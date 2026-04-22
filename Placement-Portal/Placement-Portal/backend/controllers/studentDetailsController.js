@@ -1035,7 +1035,7 @@ const changePassword = async (req, res) => {
     );
   }
 
-  const user = await UserModel.findById(userId);
+  const user = await UserModel.findById(userId).select('+password');
   if (!user) {
     throw new CustomAPIError.NotFoundError('User not found');
   }

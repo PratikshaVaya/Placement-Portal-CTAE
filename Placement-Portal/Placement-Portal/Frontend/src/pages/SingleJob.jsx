@@ -380,9 +380,9 @@ const SingleJob = () => {
                <h3 className="text-sm font-black text-indigo-300 uppercase tracking-widest mb-6">Internal Config</h3>
                <div className="space-y-4">
                   {[
-                    { label: "Target Courses", value: job?.receivingCourses?.map(c => c?.courseName).join(', ') },
+                    { label: "Target Courses", value: job?.receivingCourses?.map(c => c?.courseName)?.join(', ') },
                     { label: "Target Batches", value: Array.isArray(job?.receivingBatch) ? job.receivingBatch.map(b => b.batchYear).join(', ') : job?.receivingBatch?.batchYear },
-                    { label: "Departments", value: job?.receivingDepartments?.map(d => d?.departmentName).join(', ') }
+                    { label: "Departments", value: job?.receivingDepartments?.map(d => d?.departmentName)?.join(', ') }
                   ].map((item, i) => item.value && (
                     <div key={i}>
                        <span className="text-[10px] uppercase tracking-widest text-slate-600 font-black block mb-1">{item.label}</span>
