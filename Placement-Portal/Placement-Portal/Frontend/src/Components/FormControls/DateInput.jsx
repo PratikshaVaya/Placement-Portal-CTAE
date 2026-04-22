@@ -5,7 +5,7 @@ const DateInput = ({
   size,
   minDate,
   maxDate,
-  isRequired = true,
+  required = true,
   className = '',
   labelColor = 'text-slate-300',
 }) => {
@@ -15,7 +15,7 @@ const DateInput = ({
         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-focus-within:text-indigo-400 transition-colors">
           {label}
         </span>
-        {isRequired && <span className="text-indigo-500 text-[10px]">*</span>}
+        {required && <span className="text-indigo-500 text-[10px]">*</span>}
       </label>
       <input
         type="date"
@@ -25,7 +25,7 @@ const DateInput = ({
         className={`w-full bg-black/20 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner appearance-none cursor-pointer ${size} ${className}`}
         min={minDate}
         max={maxDate}
-        required={isRequired}
+        required={required}
       />
     </div>
 

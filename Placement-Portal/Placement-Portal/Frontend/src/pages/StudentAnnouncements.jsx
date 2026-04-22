@@ -2,6 +2,9 @@ import { useLoaderData } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 import { fetchStudentAnnouncements, getFileUrl } from '../utils';
+import Markdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 
 export const loader = (queryClient, store) => {
   return async function () {
@@ -73,9 +76,16 @@ const StudentAnnouncements = () => {
                   </div>
                 </div>
 
-                <p className="mt-6 text-slate-300 leading-relaxed font-medium relative z-10">
-                  {notice.noticeBody}
-                </p>
+                <div className="mt-6 text-slate-300 leading-relaxed font-medium relative z-10 prose prose-invert prose-indigo max-w-none">
+                  <Markdown 
+                    remarkPlugins={[remarkBreaks, remarkGfm]}
+                    components={{
+                      a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline transition-colors" />
+                    }}
+                  >
+                    {notice.noticeBody}
+                  </Markdown>
+                </div>
 
                 <div className="mt-8 pt-6 border-t border-white/5 flex flex-wrap items-center justify-between gap-6 relative z-10">
                   <div className="flex flex-wrap gap-x-6 gap-y-2">

@@ -7,6 +7,8 @@ import { toast } from 'react-toastify';
 import { FaEdit, FaExternalLinkAlt } from 'react-icons/fa';
 import { MdDelete } from 'react-icons/md';
 import Markdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 
 import {
   customFetch,
@@ -261,8 +263,13 @@ const SingleJob = () => {
                   "Graduation": eligibilityCriteria.graduationPercentage ? `${eligibilityCriteria.graduationPercentage}%` : null,
                   "Graduation CGPA": eligibilityCriteria.graduationCGPA || null,
                   "Max Active Backlogs": eligibilityCriteria.maxActiveBacklogs ?? null,
-                  "Max Completed Backlogs": eligibilityCriteria.maxCompletedBacklogs ?? null
-                }).map(([label, value]) => value && (
+                  "Max Completed Backlogs": eligibilityCriteria.maxCompletedBacklogs ?? null,
+                  "Born On or Before": eligibilityCriteria.maxDOB ? new Date(eligibilityCriteria.maxDOB).toLocaleDateString() : null,
+                  "Born On or After": eligibilityCriteria.minDOB ? new Date(eligibilityCriteria.minDOB).toLocaleDateString() : null,
+                  "10th Pass Year": eligibilityCriteria.tenthCompletionYear ?? null,
+                  "12th Pass Year": eligibilityCriteria.twelfthCompletionYear ?? null,
+                  "Graduation Pass Year": eligibilityCriteria.graduationCompletionYear ?? null
+                }).map(([label, value]) => value !== null && (
                   <div key={label} className="flex justify-between items-center py-2 border-b border-white/5">
                     <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{label}</span>
                     <span className="text-white font-black text-sm">{value}</span>
@@ -293,8 +300,15 @@ const SingleJob = () => {
               <div className="w-1 h-8 bg-indigo-500 rounded-full"></div>
               <h3 className="text-2xl font-black text-white tracking-tight">Job Description</h3>
             </div>
-            <div className="prose prose-invert prose-indigo max-w-none text-slate-400 leading-relaxed job-markdown">
-              <Markdown>{description}</Markdown>
+            <div className="prose prose-invert prose-indigo max-w-none prose-p:text-slate-300 prose-headings:text-white prose-li:text-slate-300 prose-strong:text-white prose-headings:tracking-tight leading-relaxed job-markdown">
+              <Markdown 
+                remarkPlugins={[remarkBreaks, remarkGfm]}
+                components={{
+                  a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline transition-colors" />
+                }}
+              >
+                {description}
+              </Markdown>
             </div>
           </div>
           

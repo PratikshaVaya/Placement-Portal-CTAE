@@ -137,6 +137,26 @@ const EligibilityCriteriaSchema = new mongoose.Schema(
       type: Date,
       required: false,
     },
+
+    minDOB: {
+      type: Date,
+      required: false,
+    },
+
+    tenthCompletionYear: {
+      type: Number,
+      required: false,
+    },
+
+    twelfthCompletionYear: {
+      type: Number,
+      required: false,
+    },
+
+    graduationCompletionYear: {
+      type: Number,
+      required: false,
+    },
   },
   { versionKey: false, _id: false }
 );

@@ -74,7 +74,6 @@ const PersonalDataSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Contact Number is required'],
       trim: true,
-      unique: true,
     },
 
     address: {

@@ -139,44 +139,20 @@ const UserSchema = new mongoose.Schema(
     placements: {
       type: [mongoose.Types.ObjectId],
       ref: 'StudentPlacementData',
-      index: {
-        unique: true,
-        partialFilterExpression: { placements: { $type: 'objectId' } },
-      },
     },
-
     experiences: {
       type: [mongoose.Types.ObjectId],
       ref: 'StudentExperiences',
-      index: {
-        unique: true,
-        partialFilterExpression: { experiences: { $type: 'objectId' } },
-      },
     },
-
     trainings: {
       type: [mongoose.Types.ObjectId],
       ref: 'StudentTrainings',
-      index: {
-        unique: true,
-        partialFilterExpression: { trainings: { $type: 'objectId' } },
-      },
     },
-
     skills: {
       type: [String],
-      index: {
-        unique: true,
-        partialFilterExpression: { experiences: { $type: 'string' } },
-      },
     },
-
     achievements: {
       type: [String],
-      index: {
-        unique: true,
-        partialFilterExpression: { experiences: { $type: 'string' } },
-      },
     },
 
     lastNoticeFetched: {

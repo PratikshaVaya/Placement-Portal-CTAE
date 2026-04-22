@@ -3,6 +3,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { Form, redirect } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import Markdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 
 import {
   customFetch,
@@ -275,17 +278,17 @@ const Announcements = () => {
               <label className="label">
                 <span className="label-text text-slate-300 font-medium">Attachment (optional)</span>
               </label>
-              <input 
-                type="file" 
-                name="noticeFile" 
-                className="file-input file-input-bordered bg-slate-800/50 border-white/10 text-slate-200 file-input-sm w-full" 
+              <input
+                type="file"
+                name="noticeFile"
+                className="file-input file-input-bordered bg-slate-800/50 border-white/10 text-slate-200 file-input-sm w-full"
               />
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 mt-2">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all shadow-lg shadow-indigo-500/20"
             >
               Publish Announcement
@@ -330,9 +333,18 @@ const Announcements = () => {
                     Delete Broadcast
                   </button>
                 </div>
-                
-                <p className="mt-4 text-slate-300 leading-relaxed text-base">{announcement.noticeBody}</p>
-                
+
+                <div className="mt-4 text-slate-300 leading-relaxed text-base prose prose-invert prose-indigo max-w-none">
+                  <Markdown
+                    remarkPlugins={[remarkBreaks, remarkGfm]}
+                    components={{
+                      a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline transition-colors" />
+                    }}
+                  >
+                    {announcement.noticeBody}
+                  </Markdown>
+                </div>
+
                 {announcement.noticeFile && (
                   <a
                     href={getFileUrl(announcement.noticeFile)}
@@ -343,7 +355,7 @@ const Announcements = () => {
                     View Attachment
                   </a>
                 )}
-                
+
                 <div className="mt-6 pt-4 border-t border-white/5 grid gap-4 sm:grid-cols-3 text-xs text-slate-400 uppercase tracking-wide">
                   <div className="flex flex-col gap-1">
                     <span className="text-[10px] text-slate-500">Course</span>

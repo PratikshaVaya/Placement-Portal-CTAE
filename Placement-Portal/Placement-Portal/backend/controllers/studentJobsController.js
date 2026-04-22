@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const JobOpeningModel = require('../models/JobOpenings');
 const UserModel = require('../models/User');
 const PersonalDataModel = require('../models/student/PersonalData');
@@ -105,7 +106,7 @@ const getJobsForStudent = async (req, res) => {
     return {
       ...job,
       matchFeature: {
-        skillMatchScore,
+        matchScore: skillMatchScore,
         matchedSkills,
         missingSkills,
       },

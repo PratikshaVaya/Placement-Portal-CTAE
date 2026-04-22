@@ -17,6 +17,7 @@ const NumberInput = ({
         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-focus-within:text-indigo-400 transition-colors">
           {label}
         </span>
+        {required && <span className="text-indigo-500 text-[10px]">*</span>}
       </label>
       <input
         type="number"

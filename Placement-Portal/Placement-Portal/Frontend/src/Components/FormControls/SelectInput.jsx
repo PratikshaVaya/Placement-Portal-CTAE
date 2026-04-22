@@ -9,7 +9,7 @@ const SelectInput = ({
   defaultValue,
   emptyMessage,
   size,
-  isRequired = true,
+  required = true,
   className = '',
   labelColor = 'text-slate-300',
 }) => {
@@ -30,6 +30,7 @@ const SelectInput = ({
         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-focus-within:text-indigo-400 transition-colors">
           {label}
         </span>
+        {required && <span className="text-indigo-500 text-[10px]">*</span>}
       </label>
       {options.length ? (
         <div className="relative">
@@ -39,7 +40,7 @@ const SelectInput = ({
             value={selectedOption}
             className={`w-full bg-black/20 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner cursor-pointer appearance-none ${size} ${className}`}
             onChange={handleSelectChange}
-            required={isRequired}
+            required={required}
           >
             {options.map((item) => {
               return (

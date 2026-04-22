@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import Markdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 
 import {
   FormInput,
@@ -89,6 +91,7 @@ const JobCreatePage = () => {
   const courseOptions = useSelector((state) => state.courseOptions);
 
   const [description, setDescription] = useState('');
+  const [activeTab, setActiveTab] = useState('write');
   const [deptOptions, setDeptOptions] = useState([]);
   const [batchOptions, setBatchOptions] = useState([]);
   const [skillFields, setSkillFields] = useState(['']);
@@ -121,42 +124,63 @@ const JobCreatePage = () => {
             <FormInput label="Job Profile / Role" name="profile" type="text" placeholder="e.g. Senior Software Engineer" />
 
             <div className="space-y-4">
-              <label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
-                Job Description (Markdown Supported)
-              </label>
-              <div role="tablist" className="tabs tabs-lifted bg-slate-900/40 p-1 rounded-2xl border border-white/5">
-                <input
-                  type="radio"
-                  name="job-description"
-                  role="tab"
-                  className="tab !text-[10px] !font-black !tracking-widest"
-                  aria-label="Write Content"
-                  defaultChecked={true}
-                />
-                <div role="tabpanel" className="mt-4 tab-content p-4">
-                  <textarea
-                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-6 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner leading-relaxed"
-                    placeholder="Mention job responsibilities, requirements, and perks!"
-                    name="description"
-                    rows="10"
-                    onChange={(e) => setDescription(e.currentTarget.value)}
-                    value={description}
-                  ></textarea>
+              <div className="flex items-center justify-between ml-1">
+                <label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  Job Description (Markdown Supported)
+                </label>
+                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('write')}
+                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${
+                      activeTab === 'write' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    Write Content
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('preview')}
+                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${
+                      activeTab === 'preview' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    Live Preview
+                  </button>
                 </div>
+              </div>
 
-                <input
-                  type="radio"
-                  name="job-description"
-                  role="tab"
-                  className="tab !text-[10px] !font-black !tracking-widest"
-                  aria-label="Live Preview"
-                  defaultChecked={false}
-                />
-                <div role="tabpanel" className="mt-4 tab-content p-4">
-                  <div className="flex flex-col gap-y-4 text-slate-300 job-markdown bg-black/20 rounded-2xl p-6 border border-white/5 h-[280px] overflow-auto prose prose-invert max-w-none">
-                    <Markdown>{description || "*Preview will appear here...*"}</Markdown>
+              <div className="relative group/editor transition-all duration-300">
+                {activeTab === 'write' ? (
+                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <textarea
+                      className="w-full bg-black/40 border border-white/10 rounded-3xl p-8 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 transition-all shadow-2xl leading-relaxed custom-scrollbar min-h-[400px]"
+                      placeholder="Mention job responsibilities, requirements, and perks! Use Markdown for better formatting."
+                      name="description"
+                      onChange={(e) => setDescription(e.currentTarget.value)}
+                      value={description}
+                    ></textarea>
+                    <div className="absolute bottom-4 right-6 flex items-center gap-2 pointer-events-none opacity-40">
+                      <span className="text-[8px] font-black uppercase tracking-tighter text-slate-500">Markdown Active</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="w-full bg-black/40 border border-indigo-500/10 rounded-3xl p-8 min-h-[400px] overflow-auto custom-scrollbar">
+                      <div className="prose prose-invert prose-indigo max-w-none prose-p:text-slate-300 prose-headings:text-white prose-li:text-slate-300 prose-strong:text-white prose-headings:tracking-tight job-markdown">
+                        <Markdown 
+                          remarkPlugins={[remarkBreaks, remarkGfm]}
+                          components={{
+                            a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline transition-colors" />
+                          }}
+                        >
+                          {description || "*Preview will appear here... Use **bold**, # headings, or - lists!*"}
+                        </Markdown>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -247,10 +271,19 @@ const JobCreatePage = () => {
                   <NumberInput label="Graduation CGPA (Min)" name="graduationCGPA" minValue={0} maxValue={10} step={0.1} required={false} />
                 </div>
                 <NumberInput label="Max Active Backlogs" name="maxActiveBacklogs" minValue={0} required={false} />
-                <NumberInput label="Max Total Backlogs" name="maxCompletedBacklogs" minValue={0} required={false} />
+                <NumberInput label="Max Completed Backlogs" name="maxCompletedBacklogs" minValue={0} required={false} />
                 
-                <div className="md:col-span-4">
-                  <DateInput label="Date of Birth (On or Before)" name="maxDOB" minDate="1900-01-01" required={false} />
+                <div className="md:col-span-2">
+                  <DateInput label="Born On or Before" name="maxDOB" minDate="1900-01-01" required={false} />
+                </div>
+                <div className="md:col-span-2">
+                  <DateInput label="Born On or After" name="minDOB" minDate="1900-01-01" required={false} />
+                </div>
+
+                <NumberInput label="10th Pass Year" name="tenthCompletionYear" minValue={1990} maxValue={2100} required={false} />
+                <NumberInput label="12th Pass Year" name="twelfthCompletionYear" minValue={1990} maxValue={2100} required={false} />
+                <div className="md:col-span-2">
+                  <NumberInput label="Graduation Pass Year" name="graduationCompletionYear" minValue={1990} maxValue={2100} required={false} />
                 </div>
 
                 <div className="md:col-span-4 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-4">
