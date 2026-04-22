@@ -1,10 +1,13 @@
 const mongoose = require('mongoose');
 
 const studentJobOpeningsAgg = ({ batchId, courseId, departmentId, userId }) => {
+  if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(courseId)) {
+    return [{ $match: { _id: null } }]; // Return empty result safely
+  }
   const userObjId = new mongoose.Types.ObjectId(userId);
   const courseObjId = new mongoose.Types.ObjectId(courseId);
-  const batchObjId = new mongoose.Types.ObjectId(batchId);
-  const deptObjId = new mongoose.Types.ObjectId(departmentId);
+  const batchObjId = mongoose.Types.ObjectId.isValid(batchId) ? new mongoose.Types.ObjectId(batchId) : null;
+  const deptObjId = mongoose.Types.ObjectId.isValid(departmentId) ? new mongoose.Types.ObjectId(departmentId) : null;
 
   return [
     {
@@ -62,6 +65,9 @@ const studentJobOpeningsAgg = ({ batchId, courseId, departmentId, userId }) => {
 }
 
 function studentJobsByStatusAgg({ userId, status }) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return [{ $match: { _id: null } }];
+  }
   const jobInclude = { _id: 0 };
   const jobExclude = {};
   let jobPath;
@@ -147,11 +153,14 @@ function singleJobStudentAgg({
   batchId,
   departmentId,
 }) {
+  if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(jobId)) {
+    return [{ $match: { _id: null } }];
+  }
   userId = new mongoose.Types.ObjectId(userId);
   jobId = new mongoose.Types.ObjectId(jobId);
-  courseId = new mongoose.Types.ObjectId(courseId);
-  batchId = new mongoose.Types.ObjectId(batchId);
-  departmentId = new mongoose.Types.ObjectId(departmentId);
+  courseId = mongoose.Types.ObjectId.isValid(courseId) ? new mongoose.Types.ObjectId(courseId) : null;
+  batchId = mongoose.Types.ObjectId.isValid(batchId) ? new mongoose.Types.ObjectId(batchId) : null;
+  departmentId = mongoose.Types.ObjectId.isValid(departmentId) ? new mongoose.Types.ObjectId(departmentId) : null;
 
   return [
     {
@@ -221,6 +230,9 @@ function singleJobStudentAgg({
 }
 
 function companyInchargeJobsAgg({ companyId, status }) {
+  if (!mongoose.Types.ObjectId.isValid(companyId)) {
+    return [{ $match: { _id: null } }];
+  }
   companyId = new mongoose.Types.ObjectId(companyId);
 
   // Build the match condition
@@ -276,6 +288,9 @@ function companyInchargeJobsAgg({ companyId, status }) {
 }
 
 function singleJobCompanyAgg({ companyId, jobId }) {
+  if (!mongoose.Types.ObjectId.isValid(companyId) || !mongoose.Types.ObjectId.isValid(jobId)) {
+    return [{ $match: { _id: null } }];
+  }
   companyId = new mongoose.Types.ObjectId(companyId);
   jobId = new mongoose.Types.ObjectId(jobId);
 

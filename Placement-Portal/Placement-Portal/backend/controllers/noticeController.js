@@ -273,7 +273,16 @@ const getMyNotices = async (req, res) => {
 
   const { batchId, departmentId, courseId, lastNoticeFetched } = student;
 
-  const conditionalQueries = [{ targetType: 'all' }];
+  const conditionalQueries = [
+    { targetType: 'all', receivingBatches: { $size: 0 } }
+  ];
+
+  if (batchId) {
+    conditionalQueries.push({
+      targetType: 'all',
+      receivingBatches: { $in: [batchId] },
+    });
+  }
 
   if (courseId) {
     conditionalQueries.push({ targetType: 'course', receivingCourse: courseId });
@@ -402,7 +411,18 @@ async function validateNoticeReceivers(noticeReceivers) {
   const departments = normalizeArray(receivingDepartments);
 
   if (resolvedTargetType === 'all') {
-    return { targetType: 'all', course: null, batches: [], departments: [] };
+    const validBatches = [];
+    if (batches.length) {
+      // For 'all' target type, we need to find the batches across all courses to update lastNoticeTime
+      const allCourses = await CourseModel.find();
+      for (let receivingBatch of batches) {
+        for (let course of allCourses) {
+          const batch = course.batches.get(String(receivingBatch));
+          if (batch) validBatches.push(batch);
+        }
+      }
+    }
+    return { targetType: 'all', course: null, batches: validBatches, departments: [] };
   }
 
   if (!receivingCourse?.trim()) {

@@ -132,19 +132,24 @@ const getJobsForIncharge = async (req, res) => {
   }
 
   const company = await CompanyModel.findById(companyId);
+  if (!company)
+    throw new CustomAPIError.NotFoundError(`No company found with id: ${companyId}`);
+  
   if (!company.admins.includes(userId))
     throw new CustomAPIError.UnauthorizedError(`Not allowed to access this resource!`);
 
   // Background sync: mark any open jobs with past deadlines as 'expired' in the DB
   // This runs without blocking the response
-  JobOpeningModel.updateMany(
-    {
-      'company.id': new mongoose.Types.ObjectId(companyId),
-      status: 'open',
-      deadline: { $lt: new Date() },
-    },
-    { $set: { status: 'expired' } }
-  ).catch((err) => console.error('Failed to auto-expire jobs:', err));
+  if (mongoose.Types.ObjectId.isValid(companyId)) {
+    JobOpeningModel.updateMany(
+      {
+        'company.id': new mongoose.Types.ObjectId(companyId),
+        status: 'open',
+        deadline: { $lt: new Date() },
+      },
+      { $set: { status: 'expired' } }
+    ).catch((err) => console.error('Failed to auto-expire jobs:', err));
+  }
 
   const jobs = await JobOpeningModel.aggregate(
     companyInchargeJobsAgg({ companyId, status })
@@ -160,6 +165,13 @@ const getJobsForIncharge = async (req, res) => {
 const getSingleJob = async (req, res) => {
   const jobId = req?.params?.jobId;
   const companyId = req?.user?.companyId;
+
+  if (!mongoose.Types.ObjectId.isValid(jobId)) {
+    throw new CustomAPIError.BadRequestError('Invalid Job ID');
+  }
+  if (!mongoose.Types.ObjectId.isValid(companyId)) {
+    throw new CustomAPIError.BadRequestError('Invalid Company ID (Unauthorized or Session Expired)');
+  }
 
   const job = (
     await JobOpeningModel.aggregate(
@@ -267,7 +279,11 @@ const deleteJobOpening = async (req, res) => {
 };
 
 const getJobApplications = async (req, res) => {
-  const companyId = req.user.companyId;
+  const companyId = req?.user?.companyId;
+
+  if (!mongoose.Types.ObjectId.isValid(companyId)) {
+    throw new CustomAPIError.BadRequestError('Invalid Company ID');
+  }
   const filters = {};
   [ 'search', 'status', 'minCGPA', 'min10thPercentage', 'min12thPercentage', 'minGraduationPercentage', 'branch', 'sortBy' ].forEach(key => {
     if (req.query[key]) filters[key] = req.query[key];
@@ -286,6 +302,13 @@ const getJobApplications = async (req, res) => {
 const getSingleJobApplications = async (req, res) => {
   const { jobId } = req.params;
   const { companyId } = req.user;
+  
+  if (!mongoose.Types.ObjectId.isValid(jobId)) {
+    throw new CustomAPIError.BadRequestError('Invalid Job ID');
+  }
+  if (!mongoose.Types.ObjectId.isValid(companyId)) {
+    throw new CustomAPIError.BadRequestError('Invalid Company ID (Unauthorized or Session Expired)');
+  }
   const job = (await JobOpeningModel.aggregate(singleJobApplicationsAgg({ jobId, companyId })))?.[0];
   if (!job) throw new CustomAPIError.NotFoundError(`No job found with id: ${jobId}`);
   res.status(StatusCodes.OK).json({ success: true, message: 'Applications found!', job });
@@ -307,6 +330,7 @@ const jobApplicationAction = async (req, res) => {
   if (job.status !== 'open' && action !== 'reject') throw new CustomAPIError.BadRequestError('Job is already closed!');
 
   const company = await CompanyModel.findById(companyId);
+  if (!company) throw new CustomAPIError.NotFoundError(`No company found with id: ${companyId}`);
   if (!company.admins.includes(userId)) throw new CustomAPIError.UnauthorizedError('Not authorized');
 
   application.status = updatedStatus;
@@ -352,7 +376,7 @@ const bulkJobApplicationAction = async (req, res) => {
       if (job.status !== 'open' && action !== 'reject') continue;
 
       const company = await CompanyModel.findById(companyId);
-      if (!company.admins.includes(userId)) continue;
+      if (!company || !company.admins.includes(userId)) continue;
 
       application.status = updatedStatus;
 
@@ -392,6 +416,7 @@ const sendOffer = async (req, res) => {
   if (application.status !== 'HIRED') throw new CustomAPIError.BadRequestError('Candidate must be HIRED before sending an offer');
 
   const company = await CompanyModel.findById(application.companyId);
+  if (!company) throw new CustomAPIError.NotFoundError('Company not found');
   if (!company.admins.includes(userId)) throw new CustomAPIError.UnauthorizedError('Not authorized');
 
   application.status = 'OFFER_SENT';
@@ -418,6 +443,7 @@ const uploadOfferLetter = async (req, res) => {
   if (application.status !== 'OFFER_ACCEPTED') throw new CustomAPIError.BadRequestError('Offer must be accepted first');
 
   const company = await CompanyModel.findById(application.companyId);
+  if (!company) throw new CustomAPIError.NotFoundError('Company not found');
   if (!company.admins.includes(userId)) throw new CustomAPIError.UnauthorizedError('Not authorized');
 
   const fileUploadResp = await fileUpload(offerLetterFile, 'offer-letters', 'document');
@@ -474,25 +500,28 @@ const changePassword = async (req, res) => {
 
 const getTopCandidates = async (req, res) => {
   const { id: jobId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(jobId)) {
+    throw new CustomAPIError.BadRequestError('Invalid Job ID');
+  }
   const job = await JobOpeningModel.findById(jobId);
   if (!job) throw new CustomAPIError.NotFoundError('Job not found');
 
   const courseIds = (Array.isArray(job.receivingCourses) 
     ? job.receivingCourses.map((c) => c.id) 
     : job.receivingCourses?.id ? [job.receivingCourses.id] : [])
-    .filter(id => id)
+    .filter(id => id && mongoose.Types.ObjectId.isValid(id))
     .map(id => new mongoose.Types.ObjectId(id));
 
   const deptIds = (Array.isArray(job.receivingDepartments) 
     ? job.receivingDepartments.map((d) => d.id) 
     : job.receivingDepartments?.id ? [job.receivingDepartments.id] : [])
-    .filter(id => id)
+    .filter(id => id && mongoose.Types.ObjectId.isValid(id))
     .map(id => new mongoose.Types.ObjectId(id));
 
   const batchIds = (Array.isArray(job.receivingBatch) 
     ? job.receivingBatch.map((b) => b.id) 
     : job.receivingBatch?.id ? [job.receivingBatch.id] : [])
-    .filter(id => id)
+    .filter(id => id && mongoose.Types.ObjectId.isValid(id))
     .map(id => new mongoose.Types.ObjectId(id));
 
   const query = {
@@ -546,6 +575,10 @@ const getTopCandidates = async (req, res) => {
 
 const getCompanyDashboardStats = async (req, res) => {
   const { companyId } = req.user;
+  if (!companyId || !mongoose.Types.ObjectId.isValid(companyId)) {
+    throw new CustomAPIError.BadRequestError('Invalid Company ID');
+  }
+
   const totalJobs = await JobOpeningModel.countDocuments({ 'company.id': companyId });
   const openJobs = await JobOpeningModel.countDocuments({ 'company.id': companyId, status: 'open' });
   const statusCountsRaw = await JobApplicationModel.aggregate([
@@ -566,7 +599,7 @@ const getCompanyDashboardStats = async (req, res) => {
     totalHired: (counts['HIRED'] || 0) + (counts['OFFER_ACCEPTED'] || 0),
     totalShortlisted: counts['SHORTLISTED'] || 0,
     totalRejected: (counts['REJECTED'] || 0) + (counts['OFFER_REJECTED'] || 0),
-    totalOfferSent: counts['OFFER_SENT'] || 0,
+    totalOfferSent: (counts['OFFER_SENT'] || 0) + (counts['OFFER_ACCEPTED'] || 0) + (counts['OFFER_REJECTED'] || 0),
     statusCounts: counts
   };
 
@@ -585,8 +618,14 @@ const getCompanyDashboardStats = async (req, res) => {
 
 const getStudentPublicProfile = async (req, res) => {
   const { applicationId, studentId } = req.params;
+  const { companyId } = req.user;
+  
+  if (!mongoose.Types.ObjectId.isValid(applicationId) || !mongoose.Types.ObjectId.isValid(studentId) || !mongoose.Types.ObjectId.isValid(companyId)) {
+    throw new CustomAPIError.BadRequestError('Invalid ID provided');
+  }
+
   const application = await JobApplicationModel.findById(applicationId);
-  if (!application || application.companyId.toString() !== req.user.companyId || application.applicantId.toString() !== studentId)
+  if (!application || application.companyId.toString() !== companyId || application.applicantId.toString() !== studentId)
     throw new CustomAPIError.UnauthorizedError("Unauthorized access!");
   const profileDetails = (await UserModel.aggregate(studentProfileDetailsAgg(studentId, false)))?.[0];
   res.status(StatusCodes.OK).json({ success: true, profileDetails });

@@ -95,16 +95,20 @@ const updatePersonalData = async (req, res) => {
     student.photo = photo;
   }
   if (activeBacklogs !== undefined) {
-    const activeBacklogsNum = parseInt(activeBacklogs, 10);
+    const activeBacklogsNum = activeBacklogs === "" ? 0 : parseInt(activeBacklogs, 10);
     if (isNaN(activeBacklogsNum) || activeBacklogsNum < 0) {
-      throw new CustomAPIError.BadRequestError('Active backlogs must be a non-negative number');
+      throw new CustomAPIError.BadRequestError(
+        'Active backlogs must be a non-negative number'
+      );
     }
     student.activeBacklogs = activeBacklogsNum;
   }
   if (completedBacklogs !== undefined) {
-    const completedBacklogsNum = parseInt(completedBacklogs, 10);
+    const completedBacklogsNum = completedBacklogs === "" ? 0 : parseInt(completedBacklogs, 10);
     if (isNaN(completedBacklogsNum) || completedBacklogsNum < 0) {
-      throw new CustomAPIError.BadRequestError('Completed backlogs must be a non-negative number');
+      throw new CustomAPIError.BadRequestError(
+        'Completed backlogs must be a non-negative number'
+      );
     }
     student.completedBacklogs = completedBacklogsNum;
   }

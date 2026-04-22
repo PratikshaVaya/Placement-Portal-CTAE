@@ -107,30 +107,43 @@ const Jobs = () => {
   }
 
   return (
-    <section className="p-4 sm:p-8 ">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h3 className="font-medium text-2xl">Jobs for you:</h3>
-        <SelectInput
-          options={jobOptions}
-          label="Filter your jobs"
-          value={currentFilter}
-          id="jobFilterSelect"
-          changeFn={handleJobChange}
-        />
+    <section className="p-4 sm:p-8 max-w-7xl mx-auto animate-in fade-in duration-700">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-10 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+          <div>
+            <h3 className="text-3xl font-black text-white tracking-tight">Available <span className="text-indigo-400">Opportunities</span></h3>
+            <p className="text-slate-400 text-sm font-medium mt-1">Explore and apply for the latest job openings</p>
+          </div>
+        </div>
+        
+        <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex items-center gap-4">
+          <SelectInput
+            options={jobOptions}
+            label="Filter Opportunities"
+            value={currentFilter}
+            id="jobFilterSelect"
+            changeFn={handleJobChange}
+          />
+        </div>
       </div>
 
       {profileError && (
-        <div className="my-4 rounded-md border border-red-300 bg-red-50 p-4 text-red-800 flex items-center gap-2">
-          <span className="text-xl">⚠️</span>
-          <p>{profileError}</p>
+        <div className="mb-8 rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-red-400 flex items-center gap-4 backdrop-blur-xl animate-in slide-in-from-top duration-500">
+          <div className="p-2 rounded-xl bg-red-500/10 text-xl">⚠️</div>
+          <p className="font-medium">{profileError}</p>
         </div>
       )}
 
       {role === 'student' && currentFilter === 'open' && urgentJobsCount > 0 && (
-        <div className="my-4 rounded-md border border-orange-300 bg-orange-50 p-4 text-orange-800">
-          <strong>{urgentJobsCount}</strong> job{urgentJobsCount > 1 ? 's' : ''} closing in 2 days
+        <div className="mb-8 rounded-2xl border border-orange-500/20 bg-orange-500/5 p-5 text-orange-400 flex items-center gap-4 backdrop-blur-xl animate-in slide-in-from-top duration-500 delay-100">
+          <div className="p-2 rounded-xl bg-orange-500/10 text-xl">🔥</div>
+          <p className="font-medium">
+            <span className="text-white font-black">{urgentJobsCount}</span> job{urgentJobsCount > 1 ? 's' : ''} closing in 2 days. Apply soon!
+          </p>
         </div>
       )}
+
       <JobsContainer />
 
       {role === 'student' && currentFilter === 'open' && <JobApplicationForm />}

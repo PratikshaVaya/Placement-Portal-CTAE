@@ -15,6 +15,14 @@ const register = async (req, res) => {
 
   email = email.trim().toLowerCase();
 
+  // SECURE REGISTER: Only allow registration if NO users exist (First-Time Setup)
+  const userCount = await UserModel.countDocuments({});
+  if (userCount > 0) {
+    throw new CustomAPIError.UnauthorizedError(
+      'Registration is disabled. Please contact the global admin.'
+    );
+  }
+
   const existingUser = await UserModel.findOne({ email });
   if (existingUser) {
     throw new CustomAPIError.BadRequestError("User already exists");

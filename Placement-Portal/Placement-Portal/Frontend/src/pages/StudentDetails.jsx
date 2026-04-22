@@ -431,31 +431,51 @@ export const loader = (queryClient, store) => {
 
 const StudentDetails = () => {
   return (
-    <div className="p-8 lg:p-12 flex flex-col gap-y-8">
+    <div className="flex flex-col gap-16 w-full max-w-6xl mx-auto py-10 px-4 animate-in fade-in duration-1000">
       <OfferStatus />
       <StudentIntro />
 
-      <hr />
+      <div className="space-y-24">
+        {/* Profile & Password Section */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          <section className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
+            <StudentPersonal />
+          </section>
+          <section className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
+            <ChangePassword />
+          </section>
+        </div>
 
-      <div role="tablist" className="tabs tabs-lifted">
-        <StudentPersonal />
-        <ChangePassword />
-        <StudentEducation />
-      </div>
+        {/* Education Section */}
+        <section className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
+          <StudentEducation />
+        </section>
 
-      <hr />
+        {/* Career & Experience Section */}
+        <div className="space-y-12">
+          <section className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-10 rounded-[3rem] shadow-2xl">
+            <StudentPlacement />
+          </section>
+          
+          <div className="grid lg:grid-cols-2 gap-8">
+            <section className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
+              <StudentExperience />
+            </section>
+            <section className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
+              <StudentTraining />
+            </section>
+          </div>
+        </div>
 
-      <div role="tablist" className="tabs tabs-lifted">
-        <StudentPlacement />
-        <StudentExperience />
-        <StudentTraining />
-      </div>
-
-      <hr />
-
-      <div role="tablist" className="tabs tabs-lifted">
-        <SkillsTab />
-        <AchievementsTab />
+        {/* Skills & Achievements Section */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          <section className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
+            <SkillsTab />
+          </section>
+          <section className="bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[2.5rem] shadow-2xl">
+            <AchievementsTab />
+          </section>
+        </div>
       </div>
     </div>
   );

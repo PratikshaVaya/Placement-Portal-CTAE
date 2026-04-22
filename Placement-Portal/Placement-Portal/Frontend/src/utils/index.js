@@ -36,5 +36,5 @@ export {
   fetchCompanyStatsQuery,
 } from './fetchQueries';
 
-export { formatDate, getCompanyWebsite } from './jsUtils';
+export { formatDate, getCompanyWebsite, getFileUrl } from './jsUtils';
 

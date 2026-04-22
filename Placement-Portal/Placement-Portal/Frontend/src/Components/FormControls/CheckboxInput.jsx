@@ -1,45 +1,70 @@
+import { useState } from 'react';
+
 const CheckboxInput = ({ 
   label, 
   name, 
   options, 
-  defaultValues, 
+  defaultValues = [], 
   emptyMsg, 
   onChange,
   labelColor = 'text-slate-300'
 }) => {
-  return (
-    <div className="form-control w-full">
-      <label className="label py-1.5">
-        <span className={`text-sm font-semibold capitalize ${labelColor}`}>{label}</span>
-      </label>
+  const [selected, setSelected] = useState(defaultValues);
 
-      <div className="flex flex-wrap gap-4 px-1">
-        {options.length ? (
-          options.map((option) => {
-            const { text, value } = option;
-            const checked = defaultValues?.includes(value);
+  const handleToggle = (value) => {
+    let newSelected;
+    if (selected.includes(value)) {
+      newSelected = selected.filter(v => v !== value);
+    } else {
+      newSelected = [...selected, value];
+    }
+    setSelected(newSelected);
+    if (onChange) onChange({ target: { name, value: newSelected } });
+  };
+
+  return (
+    <div className="form-control w-full space-y-3 group">
+      <label className="flex items-center gap-2 px-1">
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-focus-within:text-indigo-400 transition-colors">
+          {label}
+        </span>
+      </label>
+      
+      {options.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {options.map((option) => {
+            const isChecked = selected.includes(option.value);
             return (
               <label
-                key={value}
-                className="flex items-center gap-3 cursor-pointer group"
+                key={option.value}
+                className={`relative flex items-center justify-center p-4 rounded-2xl border transition-all cursor-pointer select-none group/opt ${
+                  isChecked 
+                  ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400 shadow-lg shadow-indigo-500/10' 
+                  : 'bg-black/20 border-white/5 text-slate-500 hover:border-white/20'
+                }`}
               >
                 <input
                   type="checkbox"
-                  value={value}
                   name={name}
-                  className="checkbox checkbox-primary border-white/30"
-                  defaultChecked={checked}
-                  onChange={onChange}
+                  value={option.value}
+                  checked={isChecked}
+                  onChange={() => handleToggle(option.value)}
+                  className="absolute opacity-0"
                 />
-                <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{text}</span>
+                <span className={`text-[10px] font-black uppercase tracking-tighter text-center transition-colors ${isChecked ? 'text-indigo-400' : 'group-hover/opt:text-slate-300'}`}>
+                  {option.text}
+                </span>
               </label>
             );
-          })
-        ) : (
-          <p className="text-sm text-slate-500 italic">{emptyMsg}</p>
-        )}
-      </div>
+          })}
+        </div>
+      ) : (
+        <div className="p-4 rounded-2xl bg-black/10 border border-dashed border-white/5 text-center">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">{emptyMsg}</span>
+        </div>
+      )}
     </div>
   );
 };
+
 export default CheckboxInput;

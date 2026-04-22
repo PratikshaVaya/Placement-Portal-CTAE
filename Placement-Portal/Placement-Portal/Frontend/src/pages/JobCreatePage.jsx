@@ -97,230 +97,191 @@ const JobCreatePage = () => {
   const todayDate = new Date();
 
   return (
-    <div className="p-8">
-      <h3 className="font-bold text-2xl underline capitalize">Create Job</h3>
-      <Form
-        method="POST"
-        className="mt-2 flex flex-col gap-4"
-        name="createJobForm"
-      >
-        <FormInput label="Profile" name="profile" type="text" />
+    <div className="flex flex-col gap-y-10 animate-in fade-in duration-700">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-1.5 h-12 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+          <div>
+            <h1 className="text-4xl font-black text-white tracking-tight">Create New <span className="text-indigo-400">Opportunity</span></h1>
+            <p className="text-slate-400 font-medium mt-1">Define roles and set eligibility criteria for talent acquisition.</p>
+          </div>
+        </div>
+      </header>
 
-        <label htmlFor="description" className="label">
-          <span className="font-medium">Job Description</span>
-        </label>
-        {/* JOB DESCRIPTION */}
-        <div role="tablist" className="tabs tabs-lifted">
-          <>
-            <input
-              type="radio"
-              name="job-description"
-              role="tab"
-              className="tab capitalize text-blue-500"
-              aria-label="Content"
-              defaultChecked={true}
-            />
-            <div role="tabpanel" className="mt-4 tab-content">
-              <textarea
-                className="textarea w-full whitespace-pre-line textarea-bordered p-4"
-                placeholder="Mention job responsibilities and requirements!"
-                name="description"
-                rows="8"
-                onChange={(e) => {
-                  setDescription(e.currentTarget.value);
-                }}
-                value={description}
-              ></textarea>
-            </div>
-          </>
+      <div className="bg-slate-900/40 backdrop-blur-xl p-10 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl -ml-32 -mb-32"></div>
+        
+        <Form
+          method="POST"
+          className="relative z-10 flex flex-col gap-8"
+          name="createJobForm"
+        >
+          <div className="grid grid-cols-1 gap-8">
+            <FormInput label="Job Profile / Role" name="profile" type="text" placeholder="e.g. Senior Software Engineer" />
 
-          <>
-            <input
-              type="radio"
-              name="job-description"
-              role="tab"
-              className="tab capitalize text-blue-500"
-              aria-label="Preview"
-              defaultChecked={false}
-            />
-            <div role="tabpanel" className="mt-4 tab-content">
-              <div className="flex flex-col gap-y-4 job-markdown text-justify overflow-auto h-60 rounded-lg border p-4">
-                <Markdown>{description}</Markdown>
+            <div className="space-y-4">
+              <label htmlFor="description" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+                Job Description (Markdown Supported)
+              </label>
+              <div role="tablist" className="tabs tabs-lifted bg-slate-900/40 p-1 rounded-2xl border border-white/5">
+                <input
+                  type="radio"
+                  name="job-description"
+                  role="tab"
+                  className="tab !text-[10px] !font-black !tracking-widest"
+                  aria-label="Write Content"
+                  defaultChecked={true}
+                />
+                <div role="tabpanel" className="mt-4 tab-content p-4">
+                  <textarea
+                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-6 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner leading-relaxed"
+                    placeholder="Mention job responsibilities, requirements, and perks!"
+                    name="description"
+                    rows="10"
+                    onChange={(e) => setDescription(e.currentTarget.value)}
+                    value={description}
+                  ></textarea>
+                </div>
+
+                <input
+                  type="radio"
+                  name="job-description"
+                  role="tab"
+                  className="tab !text-[10px] !font-black !tracking-widest"
+                  aria-label="Live Preview"
+                  defaultChecked={false}
+                />
+                <div role="tabpanel" className="mt-4 tab-content p-4">
+                  <div className="flex flex-col gap-y-4 text-slate-300 job-markdown bg-black/20 rounded-2xl p-6 border border-white/5 h-[280px] overflow-auto prose prose-invert max-w-none">
+                    <Markdown>{description || "*Preview will appear here...*"}</Markdown>
+                  </div>
+                </div>
               </div>
             </div>
-          </>
-        </div>
+          </div>
 
-        <CheckboxInput
-          label="Select Courses"
-          options={getCourseOptions(courseOptions).filter(opt => opt.value !== '-1')}
-          name="receivingCourses"
-          onChange={handleCoursesChange}
-          emptyMsg="No courses found!"
-        />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6 p-6 rounded-3xl bg-white/5 border border-white/5">
+               <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-2">
+                 <span className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></span>
+                 Target Audience
+               </h4>
+               <CheckboxInput
+                label="Select Courses"
+                options={getCourseOptions(courseOptions).filter(opt => opt.value !== '-1')}
+                name="receivingCourses"
+                onChange={handleCoursesChange}
+                emptyMsg="No courses found!"
+              />
 
-        <CheckboxInput
-          label="Select Deparments"
-          options={deptOptions}
-          name="receivingDepartments"
-          emptyMsg="Select a course!"
-        />
+              <CheckboxInput
+                label="Select Departments"
+                options={deptOptions}
+                name="receivingDepartments"
+                emptyMsg="Select a course first"
+              />
 
-        <CheckboxInput
-          label="Select Batches"
-          options={batchOptions}
-          name="receivingBatches"
-          emptyMsg="Select a course!"
-        />
-
-        <MultipleInputs
-          label="Key Skills"
-          name="keySkills"
-          type="text"
-          defaultValue={skillFields}
-          manageFields={setSkillFields}
-        />
-
-        {/* ELIGIBILITY CRITERIA SECTION */}
-        <div className="divider">Eligibility Criteria (Academic Filter)</div>
-
-        <div className="form-control">
-          <label className="label cursor-pointer">
-            <span className="label-text">Enable Eligibility Filter</span>
-            <input
-              type="checkbox"
-              name="enableEligibilityFilter"
-              className="checkbox checkbox-primary"
-              value="true"
-              checked={enableEligibility}
-              onChange={(e) => setEnableEligibility(e.target.checked)}
-            />
-          </label>
-          <label className="label">
-            <span className="label-text-alt text-gray-500">
-              Only students meeting these criteria can apply for this job. Leave empty to allow all students.
-            </span>
-          </label>
-        </div>
-
-        {enableEligibility && (
-          <div className="grid grid-cols-2 gap-4 p-4 bg-base-200 rounded-lg">
-            <NumberInput
-              label="10th Percentage"
-              name="tenthPercentage"
-              minValue={0}
-              maxValue={100}
-              required={false}
-            />
-
-            <NumberInput
-              label="12th Percentage"
-              name="twelfthPercentage"
-              minValue={0}
-              maxValue={100}
-              required={false}
-            />
-
-            <NumberInput
-              label="Diploma Percentage (Optional)"
-              name="diplomaPercentage"
-              minValue={0}
-              maxValue={100}
-              required={false}
-            />
-
-            <NumberInput
-              label="Graduation Percentage"
-              name="graduationPercentage"
-              minValue={0}
-              maxValue={100}
-              required={false}
-            />
-
-            <div className="col-span-2">
-              <NumberInput
-                label="Graduation CGPA (0-10 scale)"
-                name="graduationCGPA"
-                minValue={0}
-                maxValue={10}
-                step={0.1}
-                required={false}
+              <CheckboxInput
+                label="Select Batches"
+                options={batchOptions}
+                name="receivingBatches"
+                emptyMsg="Select a course first"
               />
             </div>
 
-            <NumberInput
-              label="Max Active Backlogs"
-              name="maxActiveBacklogs"
-              minValue={0}
-              required={false}
-            />
-
-            <NumberInput
-              label="Max Completed Backlogs"
-              name="maxCompletedBacklogs"
-              minValue={0}
-              required={false}
-            />
-
-            <div className="col-span-2">
-              <DateInput
-                label="Eligible DOB On or Before"
-                name="maxDOB"
-                minDate="1900-01-01"
-                required={false}
+            <div className="space-y-6 p-6 rounded-3xl bg-white/5 border border-white/5 flex flex-col">
+               <h4 className="text-[10px] font-black uppercase tracking-widest text-purple-400 flex items-center gap-2">
+                 <span className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]"></span>
+                 Skills & Requirements
+               </h4>
+               <MultipleInputs
+                label="Key Skills Required"
+                name="keySkills"
+                type="text"
+                defaultValue={skillFields}
+                manageFields={setSkillFields}
               />
-            </div>
-
-            <div className="col-span-2">
-              <p className="text-sm text-blue-600 font-semibold italic">
-                ℹ️ Note: Only the criteria that you fill in will be applied. Empty fields will be ignored.
-              </p>
-              <p className="text-sm text-gray-600 italic mt-1">
-                💡 Tip: Set the criteria that best fit your requirements. Missing student data will NOT cause rejection unless a value is specified here.
-              </p>
             </div>
           </div>
-        )}
 
-        <div className="flex flex-wrap justify-between gap-y-4">
-          <FormInput
-            label="Location"
-            name="location"
-            type="text"
-            size="w-fit"
-          />
+          {/* ELIGIBILITY CRITERIA SECTION */}
+          <div className="relative py-8">
+            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+              <div className="w-full border-t border-white/5"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-[#0b1120] px-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Eligibility Configuration</span>
+            </div>
+          </div>
 
-          <NumberInput
-            label="Package (LPA)"
-            name="jobPackage"
-            minValue={1}
-            size="w-fit"
-          />
+          <div className={`p-8 rounded-[2rem] border transition-all duration-500 ${enableEligibility ? 'bg-indigo-500/5 border-indigo-500/20 shadow-[0_0_40px_rgba(99,102,241,0.1)]' : 'bg-white/5 border-white/5'}`}>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                 <div className={`p-3 rounded-2xl border transition-all ${enableEligibility ? 'bg-indigo-500 text-white border-indigo-400 shadow-lg shadow-indigo-500/40' : 'bg-white/5 border-white/10 text-slate-500'}`}>
+                    <span className="text-xl">⚖️</span>
+                 </div>
+                 <div>
+                    <h4 className="font-black text-white tracking-tight">Academic Filter Engine</h4>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Enforce strict eligibility requirements</p>
+                 </div>
+              </div>
+              <input
+                type="checkbox"
+                name="enableEligibilityFilter"
+                className="toggle toggle-indigo toggle-lg"
+                value="true"
+                checked={enableEligibility}
+                onChange={(e) => setEnableEligibility(e.target.checked)}
+              />
+            </div>
 
-          <NumberInput
-            label="Openings Count"
-            name="openingsCount"
-            minValue={1}
-            size="w-fit"
-          />
+            {enableEligibility && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in slide-in-from-top-4 duration-500">
+                <NumberInput label="10th % Min" name="tenthPercentage" minValue={0} maxValue={100} required={false} />
+                <NumberInput label="12th % Min" name="twelfthPercentage" minValue={0} maxValue={100} required={false} />
+                <NumberInput label="Diploma % (Opt)" name="diplomaPercentage" minValue={0} maxValue={100} required={false} />
+                <NumberInput label="Graduation %" name="graduationPercentage" minValue={0} maxValue={100} required={false} />
+                
+                <div className="md:col-span-2">
+                  <NumberInput label="Graduation CGPA (Min)" name="graduationCGPA" minValue={0} maxValue={10} step={0.1} required={false} />
+                </div>
+                <NumberInput label="Max Active Backlogs" name="maxActiveBacklogs" minValue={0} required={false} />
+                <NumberInput label="Max Total Backlogs" name="maxCompletedBacklogs" minValue={0} required={false} />
+                
+                <div className="md:col-span-4">
+                  <DateInput label="Date of Birth (On or Before)" name="maxDOB" minDate="1900-01-01" required={false} />
+                </div>
 
-          <DateInput
-            label="Deadline"
-            name="deadline"
-            minDate={formatDate(todayDate)}
-            size="w-fit"
-          />
-        </div>
+                <div className="md:col-span-4 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-4">
+                  <span className="text-xl">💡</span>
+                  <p className="text-xs font-bold text-indigo-300 italic">
+                    Note: Empty fields will be ignored. Student eligibility will only be checked against the values provided above.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
 
-        <button
-          type="submit"
-          className="btn btn-success self-center capitalize text-white btn-sm h-9 px-4"
-          name="intent"
-          value="createJob"
-        >
-          Create
-        </button>
-      </Form>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <FormInput label="Job Location" name="location" type="text" placeholder="e.g. Remote / Bangalore" />
+            <NumberInput label="Package (LPA)" name="jobPackage" minValue={1} placeholder="e.g. 12" />
+            <NumberInput label="Openings" name="openingsCount" minValue={1} placeholder="e.g. 5" />
+            <DateInput label="Application Deadline" name="deadline" minDate={formatDate(todayDate)} />
+          </div>
+
+          <div className="pt-10 flex justify-center">
+            <button
+              type="submit"
+              className="px-12 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-sm uppercase tracking-[0.2em] transition-all shadow-2xl shadow-indigo-500/30 active:scale-95"
+              name="intent"
+              value="createJob"
+            >
+              Launch Opportunity
+            </button>
+          </div>
+        </Form>
+      </div>
     </div>
   );
 

@@ -205,7 +205,10 @@ const AdminDashboard = () => {
   const dispatch = useDispatch();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-950 text-slate-200 font-sans flex flex-col">
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans flex flex-col relative overflow-x-hidden">
+      {/* Premium Background Glow */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.05)_0%,transparent_50%)] pointer-events-none"></div>
+
       <Navbar options={getOptions(dispatch)} />
       <CourseModal />
       <CompanyModal />

@@ -16,7 +16,7 @@ const LateralCountField = ({ label, name, initValue }) => {
         id={name}
         type="number"
         name={name}
-        className="input input-bordered"
+        className="input input-bordered bg-slate-800/50 border-white/10 text-white focus:border-indigo-500 transition-all"
         min={1}
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -37,7 +37,7 @@ const CourseModal = () => {
 
   return (
     <dialog id="courseModal" className="modal backdrop-blur-sm">
-      <div className="modal-box bg-slate-900 border border-white/10 shadow-2xl p-0 overflow-hidden max-w-xl">
+      <div className="modal-box bg-slate-900 border border-white/10 shadow-2xl p-0 overflow-y-auto max-h-[90vh] max-w-xl custom-scrollbar">
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex justify-between items-center">
           <h3 className="font-bold text-xl text-white capitalize">
             {action} Course

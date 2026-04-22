@@ -201,7 +201,7 @@ const Students = () => {
             className="px-4 py-1.5 rounded-lg bg-transparent hover:bg-white/5 text-slate-300 font-medium text-sm transition-colors border border-white/20"
             href={`${import.meta.env.VITE_API_URL}/admin/students/import/sample`}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener"
           >
             Sample Import CSV
           </a>

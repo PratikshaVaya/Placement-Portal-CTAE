@@ -11,11 +11,11 @@ const addAdmin = async (adminInfo) => {
   console.log("Admin created!", admin._id);
 };
 
-addAdmin({
-  name: "Admin",
-  email: "admin@gmail.com",
-  password: "secret_pass",
-});
+// addAdmin({
+//   name: "Admin",
+//   email: "admin@gmail.com",
+//   password: "secret_pass",
+// });
 
 const addStudent = async (studentInfo) => {
   const { name, roll_no, email, courseId, batchId, departmentId, password } =

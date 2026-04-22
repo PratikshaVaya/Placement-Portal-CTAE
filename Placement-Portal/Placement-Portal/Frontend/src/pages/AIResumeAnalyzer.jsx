@@ -11,41 +11,43 @@ const ScoreRing = ({ score, label, size = 120, color = '#6366f1' }) => {
   const radius = (size - 12) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
-  const textColor = score >= 70 ? '#22c55e' : score >= 40 ? '#f59e0b' : '#ef4444';
+  const textColor = score >= 70 ? '#4ade80' : score >= 40 ? '#fbbf24' : '#f87171';
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#e2e8f0" strokeWidth={10} />
+    <div className="flex flex-col items-center gap-2 group">
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }} className="drop-shadow-2xl">
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={10} />
         <circle
           cx={size / 2} cy={size / 2} r={radius}
           fill="none" stroke={color} strokeWidth={10}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 1s ease' }}
+          style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
+          className="filter drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]"
         />
       </svg>
-      <div className="text-center" style={{ marginTop: `-${size / 2 + 14}px` }}>
-        <div className="font-black text-3xl" style={{ color: textColor }}>{score}</div>
-        <div className="text-xs text-slate-500 font-semibold">/100</div>
+      <div className="text-center" style={{ marginTop: `-${size / 2 + 18}px` }}>
+        <div className="font-black text-3xl tracking-tighter" style={{ color: textColor }}>{score}</div>
+        <div className="text-[10px] text-slate-600 font-black uppercase tracking-widest -mt-1">/100</div>
       </div>
-      <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mt-1">{label}</div>
+      <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-4 group-hover:text-indigo-400 transition-colors">{label}</div>
     </div>
   );
 };
 
 // ─── Mini Score Bar ──────────────────────────────────────────────────────────
 const ScoreBar = ({ label, score }) => {
-  const color = score >= 70 ? 'bg-green-500' : score >= 40 ? 'bg-amber-400' : 'bg-red-400';
+  const color = score >= 70 ? 'from-emerald-500 to-green-400' : score >= 40 ? 'from-amber-500 to-orange-400' : 'from-rose-500 to-red-400';
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-xs font-semibold text-slate-600">
-        <span>{label}</span><span>{score}/100</span>
+    <div className="space-y-2">
+      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
+        <span>{label}</span>
+        <span className="text-slate-300">{score}%</span>
       </div>
-      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+      <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/5 p-[1px]">
         <div
-          className={`h-full rounded-full ${color} transition-all duration-1000`}
+          className={`h-full rounded-full bg-gradient-to-r ${color} transition-all duration-[1.5s] ease-out shadow-[0_0_10px_rgba(0,0,0,0.5)]`}
           style={{ width: `${score}%` }}
         />
       </div>
@@ -56,13 +58,13 @@ const ScoreBar = ({ label, score }) => {
 // ─── Tag Chip ────────────────────────────────────────────────────────────────
 const Chip = ({ text, variant = 'default' }) => {
   const variants = {
-    default: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    danger:  'bg-red-50 text-red-700 border-red-200',
-    success: 'bg-green-50 text-green-700 border-green-200',
-    warning: 'bg-amber-50 text-amber-700 border-amber-200',
+    default: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+    danger:  'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    success: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    warning: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   };
   return (
-    <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold border ${variants[variant]}`}>
+    <span className={`inline-block px-4 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest border ${variants[variant]}`}>
       {text}
     </span>
   );
@@ -98,213 +100,180 @@ const AIResumeAnalyzer = () => {
       if (data.success) {
         setHistory(data.history);
       }
-    } catch (err) {
-      console.error('Failed to fetch history', err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
+  useEffect(() => { fetchHistory(); }, []);
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragOver(false);
-    handleFile(e.dataTransfer.files?.[0]);
-  };
-
-  // ── Analyze ──
-  const handleAnalyze = async () => {
-    if (!resumeFile) { toast.error('Please upload your resume first.'); return; }
+  const analyze = async () => {
+    if (!resumeFile) { toast.warn('Please upload a resume first.'); return; }
     setIsAnalyzing(true);
-    setResult(null);
-
     try {
       const formData = new FormData();
       formData.append('resume', resumeFile);
-      if (jobDescription.trim()) formData.append('jobDescription', jobDescription);
+      if (jobDescription) formData.append('jobDescription', jobDescription);
 
       const { data } = await customFetch.post('/ai-resume/analyze', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 60000,
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-
-      setResult(data.analysis);
-      setResumeText(data.resumeText || '');
-      setActiveTab('analysis');
-      toast.success('✨ AI analysis complete!');
-      fetchHistory(); // Refresh history
+      if (data.success) {
+        setResult(data.analysis);
+        setResumeText(data.resumeText);
+        toast.success('Analysis complete!');
+        fetchHistory();
+      }
     } catch (err) {
-      const msg = err?.response?.data?.message || 'Analysis failed. Please try again.';
-      toast.error(msg);
-    } finally {
-      setIsAnalyzing(false);
-    }
+      toast.error(err.response?.data?.message || 'Analysis failed.');
+    } finally { setIsAnalyzing(false); }
   };
 
-  const handleReset = () => {
-    setResumeFile(null);
-    setJobDescription('');
-    setResult(null);
-    setResumeText('');
-  };
-
-  // ── Render ──
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20 px-4 py-8 print:p-0 print:bg-none print:min-h-0">
-      <div className="max-w-5xl mx-auto space-y-8 print:space-y-4">
-
+    <div className="min-h-screen bg-transparent p-4 sm:p-8 animate-in fade-in duration-700">
+      <div className="max-w-6xl mx-auto space-y-10">
+        
         {/* ── Header ── */}
-        <div className="text-center space-y-3 print:hidden">
-          <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider">
-            <FiZap className="text-base" /> AI-Powered
+        <header className="text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest mx-auto">
+            <FiZap className="animate-pulse" /> AI-Powered
           </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Resume Analyzer</h1>
-          <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+          <h1 className="text-5xl font-black text-white tracking-tight">
+            Resume <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">Analyzer</span>
+          </h1>
+          <p className="text-slate-400 max-w-2xl mx-auto text-lg font-medium leading-relaxed">
             Upload your resume and paste a job description. Our AI will analyze the match, highlight gaps, and suggest improvements.
           </p>
-        </div>
+        </header>
 
-        {/* ── Upload Section ── */}
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 space-y-6 print:hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-            {/* File Upload */}
-            <div className="space-y-3">
-              <label className="block text-sm font-bold text-slate-700 uppercase tracking-wider">
-                Resume <span className="text-red-400">*</span>
-              </label>
-              <div
-                id="resume-dropzone"
-                className={`relative border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${
-                  dragOver ? 'border-indigo-400 bg-indigo-50' :
-                  resumeFile ? 'border-green-400 bg-green-50' :
-                  'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
-                }`}
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.txt"
-                  className="hidden"
-                  onChange={(e) => handleFile(e.target.files?.[0])}
-                  id="resume-file-input"
-                />
-                {resumeFile ? (
-                  <div className="space-y-2">
-                    <FiCheckCircle className="text-4xl text-green-500 mx-auto" />
-                    <p className="font-bold text-green-700 text-sm">{resumeFile.name}</p>
-                    <p className="text-xs text-slate-400">{(resumeFile.size / 1024).toFixed(1)} KB</p>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setResumeFile(null); setResult(null); }}
-                      className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 mx-auto"
-                    >
-                      <FiX /> Remove
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <FiUpload className="text-4xl text-slate-300 mx-auto" />
-                    <div>
-                      <p className="font-bold text-slate-600">Drop your resume here</p>
-                      <p className="text-xs text-slate-400 mt-1">PDF or TXT · Max 5MB</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Job Description */}
-            <div className="space-y-3">
-              <label className="block text-sm font-bold text-slate-700 uppercase tracking-wider">
-                Job Description <span className="text-slate-400 font-normal normal-case">(optional)</span>
-              </label>
-              <textarea
-                id="job-description-input"
-                rows={8}
-                placeholder="Paste the job description here for targeted analysis — required skills, responsibilities, expectations..."
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent resize-none leading-relaxed"
-              />
-              {jobDescription && (
-                <p className="text-xs text-slate-400">{jobDescription.split(/\s+/).length} words</p>
-              )}
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <button
-              id="analyze-btn"
-              onClick={handleAnalyze}
-              disabled={isAnalyzing || !resumeFile}
-              className={`flex items-center gap-2 px-8 py-3 rounded-2xl font-bold text-white text-sm shadow-lg transition-all duration-200 ${
-                isAnalyzing || !resumeFile
-                  ? 'bg-slate-300 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:scale-105 hover:shadow-indigo-200 hover:shadow-xl'
+        {/* ── Inputs Section ── */}
+        {!result && !isAnalyzing && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+            {/* Upload Area */}
+            <div 
+              className={`relative group rounded-[3rem] border-2 border-dashed transition-all duration-500 bg-slate-900/40 backdrop-blur-xl p-10 flex flex-col items-center justify-center text-center gap-6 ${
+                dragOver ? 'border-indigo-500 bg-indigo-500/5' : resumeFile ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/10 hover:border-white/20'
               }`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
             >
-              {isAnalyzing ? (
-                <><span className="animate-spin">⚙️</span> Analyzing with AI...</>
-              ) : (
-                <><FiZap /> Analyze with AI</>
-              )}
-            </button>
-            {result && (
-              <>
-                <button
-                  onClick={handleReset}
-                  className="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-slate-500 bg-slate-50 border border-slate-200 text-sm hover:bg-slate-100 transition-all"
-                >
-                  <FiRefreshCw /> Reset
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* ── Loading State ── */}
-        {isAnalyzing && (
-          <div className="bg-white rounded-3xl shadow-xl border border-indigo-100 p-12 text-center">
-            <div className="space-y-4">
-              <div className="text-5xl animate-bounce">🤖</div>
-              <h3 className="text-xl font-bold text-slate-800">AI is analyzing your resume…</h3>
-              <p className="text-slate-500 text-sm">Parsing content · Comparing with JD · Generating suggestions</p>
-              <div className="flex justify-center gap-2 pt-2">
-                {['Parsing', 'Matching', 'Scoring', 'Suggesting'].map((s, i) => (
-                  <span key={s} className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full font-semibold"
-                    style={{ animationDelay: `${i * 0.2}s`, animation: 'pulse 1.5s infinite' }}>
-                    {s}
-                  </span>
-                ))}
+              <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center text-3xl transition-all duration-500 shadow-2xl ${
+                resumeFile ? 'bg-emerald-500 text-white' : 'bg-white/5 text-slate-500 group-hover:bg-indigo-500 group-hover:text-white'
+              }`}>
+                {resumeFile ? <FiCheckCircle /> : <FiUpload />}
               </div>
+              
+              <div>
+                <h3 className="text-xl font-black text-white mb-2">
+                  {resumeFile ? 'Resume Uploaded' : 'Drop your resume here'}
+                </h3>
+                <p className="text-slate-500 text-sm font-medium">
+                  {resumeFile ? resumeFile.name : 'PDF or TXT - Max 5MB'}
+                </p>
+              </div>
+
+              {resumeFile && (
+                <button 
+                  onClick={() => setResumeFile(null)}
+                  className="absolute top-6 right-6 p-2 rounded-xl bg-white/5 text-slate-500 hover:text-red-400 transition-all"
+                >
+                  <FiX />
+                </button>
+              )}
+
+              <input 
+                type="file" ref={fileInputRef} className="hidden" accept=".pdf,.txt"
+                onChange={(e) => handleFile(e.target.files[0])}
+              />
+              {!resumeFile && (
+                <button 
+                  onClick={() => fileInputRef.current.click()}
+                  className="px-8 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-black text-sm hover:bg-white/10 transition-all active:scale-95 shadow-xl"
+                >
+                  Choose File
+                </button>
+              )}
+            </div>
+
+            {/* JD Area */}
+            <div className="rounded-[3rem] bg-slate-900/40 backdrop-blur-xl border border-white/10 p-10 flex flex-col gap-6">
+               <div className="flex items-center gap-3">
+                  <div className="w-1 h-6 bg-indigo-500 rounded-full"></div>
+                  <h3 className="text-xl font-black text-white tracking-tight">Target Job Description</h3>
+               </div>
+               <textarea 
+                  className="flex-1 bg-black/20 border border-white/5 rounded-[2rem] p-6 text-slate-300 text-sm focus:outline-none focus:border-indigo-500/50 transition-all resize-none placeholder:text-slate-600 min-h-[200px]"
+                  placeholder="Paste the job description here for targeted analysis — required skills, responsibilities, expectations..."
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+               />
             </div>
           </div>
         )}
 
-        {/* ── Results ── */}
-        {result && (
-          <div id="ai-analysis-results" ref={printRef} className="space-y-6">
+        {/* ── Action Button ── */}
+        {!result && !isAnalyzing && (
+          <div className="flex justify-center">
+             <button 
+                onClick={analyze}
+                disabled={!resumeFile}
+                className={`px-12 py-5 rounded-[2rem] font-black text-lg transition-all flex items-center gap-3 shadow-2xl active:scale-95 ${
+                  !resumeFile ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50' : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-500/30'
+                }`}
+             >
+               <FiZap /> Run AI Analysis
+             </button>
+          </div>
+        )}
 
-            {/* Score Overview */}
-            <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="flex-shrink-0">
-                  <ScoreRing score={result.matchScore} label="Match Score" size={140} />
+        {/* ── Loading State ── */}
+        {isAnalyzing && (
+          <div className="text-center py-20 space-y-8 animate-in fade-in duration-700">
+            <div className="relative w-24 h-24 mx-auto">
+              <div className="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center text-3xl text-indigo-400">
+                <FiZap className="animate-pulse" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-white">Analyzing Your Potential</h3>
+              <p className="text-slate-500 font-medium animate-pulse">Running ATS checks, skill matching, and AI rewriting...</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Result View ── */}
+        {result && !isAnalyzing && (
+          <div ref={printRef} className="space-y-8 animate-in slide-in-from-bottom duration-1000">
+            {/* Summary Card */}
+            <div className="rounded-[3rem] bg-slate-900/40 backdrop-blur-xl border border-white/10 p-10 overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
+              <div className="flex justify-between items-start relative z-10 mb-10">
+                <div className="flex items-center gap-3">
+                   <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-400">
+                      <FiTrendingUp size={24} />
+                   </div>
+                   <h2 className="text-2xl font-black text-white tracking-tight">Analysis Overview</h2>
                 </div>
-                <div className="flex-1 space-y-4">
+                <button 
+                  onClick={() => { setResult(null); setResumeFile(null); }}
+                  className="px-6 py-2 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-all font-bold text-xs"
+                >
+                  Start New
+                </button>
+              </div>
+
+              <div className="flex flex-col lg:flex-row items-center lg:items-start gap-12 relative z-10">
+                <div className="flex-shrink-0">
+                  <ScoreRing score={result.matchScore} label="Overall Match" size={180} />
+                </div>
+                <div className="flex-1 space-y-6">
                   <div>
-                    <h2 className="text-xl font-black text-slate-800 mb-1">Overall Assessment</h2>
-                    <p className="text-slate-600 leading-relaxed">{result.summary}</p>
+                    <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-3">AI Assessment</h3>
+                    <p className="text-slate-300 text-lg font-medium leading-relaxed">{result.summary}</p>
                   </div>
                   {result.atsBadges && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       <ScoreBar label="Formatting" score={result.atsBadges.formattingScore} />
                       <ScoreBar label="Keywords" score={result.atsBadges.keywordScore} />
                       <ScoreBar label="Quantification" score={result.atsBadges.quantificationScore} />
@@ -315,69 +284,72 @@ const AIResumeAnalyzer = () => {
               </div>
             </div>
 
-            {/* Tabs */}
-            <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden print:shadow-none print:border-none print:overflow-visible">
-              <div className="flex border-b border-slate-100 overflow-x-auto print:hidden">
+            {/* Tabs Navigation */}
+            <div className="flex overflow-x-auto gap-4 p-2 bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] no-scrollbar">
                 {[
-                  { id: 'analysis', label: '📊 Analysis', icon: FiTarget },
-                  { id: 'improvements', label: '💡 Improvements', icon: FiTrendingUp },
-                  { id: 'keywords', label: '🔑 ATS Keywords', icon: FiAward },
-                  { id: 'rewritten', label: '✍️ Rewritten Points', icon: FiList },
+                  { id: 'analysis', label: 'Detailed Analysis', icon: FiTarget },
+                  { id: 'improvements', label: 'Key Improvements', icon: FiTrendingUp },
+                  { id: 'keywords', label: 'ATS Keywords', icon: FiAward },
+                  { id: 'rewritten', label: 'Rewritten Points', icon: FiList },
                 ].map(tab => (
                   <button
                     key={tab.id}
-                    id={`tab-${tab.id}`}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-shrink-0 px-6 py-4 text-sm font-bold transition-colors ${
+                    className={`flex items-center gap-2 px-8 py-4 rounded-3xl text-sm font-black transition-all whitespace-nowrap ${
                       activeTab === tab.id
-                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
-                        : 'text-slate-500 hover:text-slate-700'
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                        : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
                     }`}
                   >
-                    {tab.label}
+                    <tab.icon /> {tab.label}
                   </button>
                 ))}
-              </div>
+            </div>
 
-              <div className="p-8 print:p-0">
-
+            {/* Tab Content */}
+            <div className="rounded-[3rem] bg-slate-900/40 backdrop-blur-xl border border-white/10 p-10 min-h-[400px]">
+                
                 {/* Analysis Tab */}
-                <div className={activeTab === 'analysis' ? 'block' : 'hidden print:!block print:mt-8'}>
-                  <h2 className="hidden print:!block text-2xl font-black text-slate-800 mb-6 border-b pb-2 border-slate-200">Analysis</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-3">
-                      <h3 className="font-bold text-green-700 flex items-center gap-2">
-                        <FiCheckCircle /> Strengths
-                      </h3>
-                      <ul className="space-y-2">
+                <div className={activeTab === 'analysis' ? 'space-y-10 animate-in fade-in duration-500' : 'hidden'}>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center"><FiCheckCircle /></div>
+                         <h3 className="font-black text-white uppercase tracking-widest text-xs">Strengths</h3>
+                      </div>
+                      <ul className="space-y-3">
                         {(result.strengths || []).map((s, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                            <span className="text-green-500 mt-0.5 flex-shrink-0">✓</span> {s}
+                          <li key={i} className="flex items-start gap-3 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-sm text-slate-300">
+                            <span className="text-emerald-400 mt-0.5 shrink-0">✓</span> {s}
                           </li>
                         ))}
                       </ul>
                     </div>
-                    <div className="space-y-3">
-                      <h3 className="font-bold text-red-700 flex items-center gap-2">
-                        <FiAlertCircle /> Missing Skills
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
+
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center"><FiAlertCircle /></div>
+                         <h3 className="font-black text-white uppercase tracking-widest text-xs">Missing Skills</h3>
+                      </div>
+                      <div className="flex flex-wrap gap-3">
                         {(result.missingSkills || []).map((s, i) => (
                           <Chip key={i} text={s} variant="danger" />
                         ))}
                         {(!result.missingSkills || result.missingSkills.length === 0) && (
-                          <p className="text-sm text-slate-400 italic">No critical skills missing!</p>
+                          <p className="text-sm text-slate-500 italic p-4 bg-slate-800/20 rounded-2xl w-full text-center">No critical skills missing!</p>
                         )}
                       </div>
                     </div>
-                    <div className="space-y-3">
-                      <h3 className="font-bold text-amber-700 flex items-center gap-2">
-                        <FiTrendingUp /> Weak Areas
-                      </h3>
-                      <ul className="space-y-2">
+
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center"><FiTrendingUp /></div>
+                         <h3 className="font-black text-white uppercase tracking-widest text-xs">Weak Areas</h3>
+                      </div>
+                      <ul className="space-y-3">
                         {(result.weakAreas || []).map((s, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                            <span className="text-amber-500 mt-0.5 flex-shrink-0">⚠</span> {s}
+                          <li key={i} className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-sm text-slate-300">
+                            <span className="text-amber-400 mt-0.5 shrink-0">⚠</span> {s}
                           </li>
                         ))}
                       </ul>
@@ -386,35 +358,34 @@ const AIResumeAnalyzer = () => {
                 </div>
 
                 {/* Improvements Tab */}
-                <div className={activeTab === 'improvements' ? 'block' : 'hidden print:!block print:mt-8'}>
-                  <h2 className="hidden print:!block text-2xl font-black text-slate-800 mb-6 border-b pb-2 border-slate-200">Improvements</h2>
-                  <div className="space-y-4">
-                    <p className="text-sm text-slate-500 mb-4">
-                      Actionable suggestions to improve your resume based on AI analysis:
-                    </p>
+                <div className={activeTab === 'improvements' ? 'space-y-8 animate-in fade-in duration-500' : 'hidden'}>
+                  <div className="space-y-6">
                     {(result.improvements || []).map((imp, i) => (
-                      <div key={i} className="flex items-start gap-3 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100">
-                        <span className="flex-shrink-0 w-7 h-7 bg-indigo-600 text-white text-xs font-black rounded-full flex items-center justify-center">
+                      <div key={i} className="flex items-start gap-5 p-6 bg-white/5 border border-white/5 rounded-[2rem] hover:bg-white/10 transition-all">
+                        <span className="flex-shrink-0 w-10 h-10 bg-indigo-600 text-white text-sm font-black rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
                           {i + 1}
                         </span>
-                        <p className="text-sm text-slate-700 leading-relaxed">{imp}</p>
+                        <p className="text-slate-300 font-medium leading-relaxed">{imp}</p>
                       </div>
                     ))}
                     {result.improvedResumeSections && (
-                      <div className="mt-6 p-5 bg-green-50 rounded-2xl border border-green-200 space-y-3">
-                        <h4 className="font-bold text-green-800 text-sm uppercase tracking-wider">
-                          ✅ Suggested Professional Summary
-                        </h4>
-                        <p className="text-sm text-slate-700 leading-relaxed italic">
-                          "{result.improvedResumeSections.summary}"
-                        </p>
+                      <div className="mt-10 p-8 bg-indigo-600/10 border border-indigo-500/20 rounded-[2.5rem] space-y-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10"><FiZap size={80} /></div>
+                        <div className="relative z-10">
+                          <h4 className="font-black text-indigo-400 text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                             Suggested Professional Summary
+                          </h4>
+                          <p className="text-slate-200 text-lg italic leading-relaxed font-medium">
+                            "{result.improvedResumeSections.summary}"
+                          </p>
+                        </div>
                         {result.improvedResumeSections.skills && (
-                          <>
-                            <h4 className="font-bold text-green-800 text-sm uppercase tracking-wider pt-2">
-                              🛠 Enhanced Skills List
+                          <div className="relative z-10 pt-4 border-t border-white/5">
+                            <h4 className="font-black text-indigo-400 text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                              Enhanced Skills List
                             </h4>
-                            <p className="text-sm text-slate-700">{result.improvedResumeSections.skills}</p>
-                          </>
+                            <p className="text-slate-300 font-medium">{result.improvedResumeSections.skills}</p>
+                          </div>
                         )}
                       </div>
                     )}
@@ -422,98 +393,98 @@ const AIResumeAnalyzer = () => {
                 </div>
 
                 {/* ATS Keywords Tab */}
-                <div className={activeTab === 'keywords' ? 'block' : 'hidden print:!block print:mt-8'}>
-                  <h2 className="hidden print:!block text-2xl font-black text-slate-800 mb-6 border-b pb-2 border-slate-200">ATS Keywords</h2>
-                  <div className="space-y-5">
-                    <p className="text-sm text-slate-500">
-                      Include these keywords naturally in your resume to pass ATS filters:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {(result.atsKeywords || []).map((kw, i) => (
-                        <Chip key={i} text={kw} variant="default" />
-                      ))}
+                <div className={activeTab === 'keywords' ? 'space-y-8 animate-in fade-in duration-500' : 'hidden'}>
+                  <div className="space-y-8">
+                    <div className="p-6 bg-indigo-600/10 border border-indigo-500/20 rounded-[2rem] flex items-center gap-4">
+                       <div className="text-2xl">💡</div>
+                       <p className="text-indigo-200 text-sm font-medium">
+                         <strong>Pro Tip:</strong> Include these keywords naturally in your skills section and experience descriptions to pass ATS filters.
+                       </p>
                     </div>
-                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-sm text-amber-800">
-                      <strong>💡 Pro Tip:</strong> Use these exact keywords in your skills section, experience descriptions, and summary. Don't keyword-stuff — integrate them naturally.
+                    <div className="flex flex-wrap gap-3">
+                      {(result.atsKeywords || []).map((kw, i) => (
+                        <span key={i} className="px-5 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-slate-300 font-bold text-sm hover:border-indigo-500/50 transition-all">
+                          {kw}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 </div>
 
                 {/* Rewritten Points Tab */}
-                <div className={activeTab === 'rewritten' ? 'block' : 'hidden print:!block print:mt-8'}>
-                  <h2 className="hidden print:!block text-2xl font-black text-slate-800 mb-6 border-b pb-2 border-slate-200">Rewritten Points</h2>
+                <div className={activeTab === 'rewritten' ? 'space-y-6 animate-in fade-in duration-500' : 'hidden'}>
                   <div className="space-y-4">
-                    <p className="text-sm text-slate-500 mb-4">
-                      AI-improved bullet points using strong action verbs and quantification:
-                    </p>
                     {(result.rewrittenPoints || []).map((point, i) => (
-                      <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors">
-                        <div className="flex items-start gap-2">
-                          <span className="text-indigo-500 flex-shrink-0 mt-0.5">▸</span>
-                          <p className="text-sm text-slate-700 leading-relaxed">{point}</p>
+                      <div key={i} className="p-6 bg-white/5 rounded-[2rem] border border-white/5 hover:border-indigo-500/30 transition-all group">
+                        <div className="flex items-start gap-4">
+                          <span className="text-indigo-500 flex-shrink-0 mt-1"><FiList /></span>
+                          <p className="text-slate-300 font-medium leading-relaxed group-hover:text-white transition-colors">{point}</p>
                         </div>
                       </div>
                     ))}
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-sm text-blue-800">
-                      <strong>📌 Note:</strong> These are rewrites of your existing experience. Review them before using — never add experiences you haven't had.
-                    </div>
                   </div>
                 </div>
-              </div>
             </div>
 
-            {/* Download CTA */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl print:hidden">
-              <div>
-                <h3 className="text-white font-bold text-lg">Ready to improve your resume?</h3>
-                <p className="text-indigo-200 text-sm mt-1">Use these suggestions in your Resume Builder to create the perfect resume.</p>
+            {/* Bottom CTA */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-[3rem] p-10 flex flex-col sm:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+              <div className="relative z-10 text-center sm:text-left">
+                <h3 className="text-white font-black text-2xl tracking-tight">Ready to build your perfect resume?</h3>
+                <p className="text-indigo-100 font-medium mt-2">Apply these improvements in our builder to stand out.</p>
               </div>
-              <div className="flex gap-3">
-                <a
-                  href="/student-dashboard/resume"
-                  className="flex items-center gap-2 bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-indigo-400 transition-all border border-indigo-400"
-                >
-                  Open Resume Builder →
-                </a>
-              </div>
+              <a
+                href="/student-dashboard/resume"
+                className="relative z-10 px-10 py-4 bg-white text-indigo-600 font-black rounded-2xl shadow-xl hover:bg-indigo-50 transition-all active:scale-95"
+              >
+                Open Resume Builder
+              </a>
             </div>
           </div>
         )}
 
         {/* ── Empty State ── */}
         {!result && !isAnalyzing && (
-          <div className="text-center py-12 text-slate-400 space-y-3">
-            <div className="text-6xl">📄</div>
-            <p className="font-semibold text-slate-500">Upload your resume to get started</p>
-            <p className="text-sm">The AI will analyze it and provide personalized feedback</p>
+          <div className="text-center py-20 space-y-6">
+            <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center text-5xl mx-auto opacity-50">📄</div>
+            <div className="space-y-2">
+              <p className="text-2xl font-black text-white">No analysis yet</p>
+              <p className="text-slate-500 font-medium">Upload your resume to get personalized feedback and score.</p>
+            </div>
           </div>
         )}
 
         {/* ── History State ── */}
         {!result && !isAnalyzing && history.length > 0 && (
-          <div className="space-y-4 pb-8">
-            <h3 className="font-bold text-slate-700 text-lg border-b pb-2">Recent AI Analyses</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-8 pb-12">
+            <div className="flex items-center gap-3">
+               <div className="w-1 h-6 bg-indigo-500 rounded-full"></div>
+               <h3 className="text-xl font-black text-white tracking-tight">Recent Analyses</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {history.map((item, idx) => (
                 <div 
                   key={item._id || idx}
-                  className="bg-white p-5 rounded-2xl shadow border border-slate-100 hover:shadow-lg hover:border-indigo-300 cursor-pointer transition-all flex flex-col gap-3"
+                  className="group bg-slate-900/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 hover:border-indigo-500/50 hover:bg-slate-800/60 transition-all duration-500 cursor-pointer shadow-xl flex flex-col gap-6"
                   onClick={() => {
                     setResult(item.analysisResult);
-                    toast.success('Loaded past analysis!');
+                    toast.success('Analysis loaded!');
                   }}
                 >
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="font-bold text-slate-800 text-sm truncate" title={item.resumeFileName}>{item.resumeFileName}</div>
-                    <div className="flex-shrink-0 bg-indigo-50 text-indigo-700 px-2 py-1 rounded font-bold text-xs">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="font-black text-white text-lg truncate leading-tight flex-1" title={item.resumeFileName}>
+                      {item.resumeFileName}
+                    </div>
+                    <div className="bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full font-black text-[10px] uppercase tracking-widest border border-indigo-500/20">
                       {item.analysisResult?.matchScore}/100
                     </div>
                   </div>
-                  <div className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                  <p className="text-sm text-slate-400 font-medium line-clamp-3 leading-relaxed">
                     {item.analysisResult?.summary}
-                  </div>
-                  <div className="text-xs font-semibold text-slate-400 mt-auto pt-3 border-t border-slate-50 flex items-center gap-1">
-                    🕒 {new Date(item.createdAt).toLocaleDateString()}
+                  </p>
+                  <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
+                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{new Date(item.createdAt).toLocaleDateString()}</span>
+                     <span className="text-indigo-400 text-xs font-black group-hover:translate-x-1 transition-transform">View Report →</span>
                   </div>
                 </div>
               ))}

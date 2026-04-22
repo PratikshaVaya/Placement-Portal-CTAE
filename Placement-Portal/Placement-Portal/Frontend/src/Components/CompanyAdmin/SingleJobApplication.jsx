@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { customFetch } from '../../utils';
+import { customFetch, getFileUrl } from '../../utils';
 import { toast } from 'react-toastify';
 import { FiExternalLink, FiSend, FiUpload } from 'react-icons/fi';
 import { useState } from 'react';
@@ -186,17 +186,37 @@ const SingleJobApplication = ({
   const allBranches = dynamicBranches.length > 0 ? dynamicBranches : ['CSE', 'IT', 'ECE', 'Mechanical', 'Civil', 'Electrical'];
 
   return (
-    <div className="py-4 px-8 flex flex-col gap-y-4">
-      <Link
-        to={`/company-dashboard/jobs/${jobId}`}
-        className="text-xl font-medium tracking-wide flex gap-x-2 items-center underline hover:link-primary"
-      >
-        {profile} <FiExternalLink />
-      </Link>
-      <p className="flex gap-x-4">
-        <span>Deadline: {new Date(deadline).toLocaleDateString()}</span>
-        <span>Openings Count: {openingsCount}</span>
-      </p>
+    <>
+    <div className="flex flex-col gap-y-6 animate-in fade-in duration-500">
+      <div className="bg-slate-900/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 transition-all duration-500 group-hover:bg-indigo-500/10"></div>
+        
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-6 relative z-10">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+               <div className="w-1.5 h-6 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Managing Applications For</span>
+            </div>
+            <Link
+              to={`/company-dashboard/jobs/${jobId}`}
+              className="text-3xl font-black text-white tracking-tight hover:text-indigo-400 transition-colors flex items-center gap-3"
+            >
+              {profile} <FiExternalLink className="text-xl opacity-50" />
+            </Link>
+          </div>
+          
+          <div className="flex flex-wrap gap-4">
+            <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/5 flex flex-col">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Deadline</span>
+              <span className="text-slate-200 text-sm font-bold">{new Date(deadline).toLocaleDateString()}</span>
+            </div>
+            <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/5 flex flex-col">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Openings</span>
+              <span className="text-slate-200 text-sm font-bold">{openingsCount} Positions</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Filter Panel */}
       <ApplicationFilterPanel
@@ -204,7 +224,7 @@ const SingleJobApplication = ({
         branches={allBranches}
       />
 
-      <div role="tablist" className="tabs tabs-lifted">
+      <div role="tablist" className="tabs tabs-lifted bg-slate-900/20 p-2 rounded-[2rem] border border-white/5 backdrop-blur-md">
         <TabContent
           jobId={jobId}
           jobType="pending"
@@ -241,7 +261,21 @@ const SingleJobApplication = ({
           onAction={handleAction}
         />
       </div>
+
     </div>
+    
+    {/* Section Divider */}
+    <div className="my-16 relative">
+      <div className="absolute inset-0 flex items-center" aria-hidden="true">
+        <div className="w-full border-t border-white/5"></div>
+      </div>
+      <div className="relative flex justify-center">
+        <div className="bg-slate-900 px-4">
+           <div className="w-2 h-2 rounded-full bg-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+        </div>
+      </div>
+    </div>
+    </>
   );
 };
 
@@ -270,49 +304,53 @@ const TabContent = ({
         type="radio"
         name={`${jobId}_tab`}
         role="tab"
-        className="tab capitalize text-blue-500 whitespace-nowrap"
+        className="tab capitalize whitespace-nowrap !text-[10px] !font-black !tracking-widest !h-12"
         aria-label={label || jobType}
         defaultChecked={jobType === 'pending'}
       />
-      <div role="tabpanel" className="tab-content bg-base-100 border-base-300 rounded-box p-6">
+      <div role="tabpanel" className="tab-content bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 mt-4 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
+
         {arr.length ? (
           <div className="overflow-x-auto">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-               <div className="text-sm text-gray-600">
+               <div className="text-xs font-bold text-slate-500">
                 {isSmart ? (
-                  <span className="flex items-center gap-1 text-purple-600 font-bold animate-pulse">
-                    ✨ Showing Top {arr.length} AI Recommended Candidates
+                  <span className="flex items-center gap-2 text-purple-400 animate-pulse">
+                    ✨ Smart AI Ranking Active
                   </span>
                 ) : (
                   `Showing ${arr.length} of ${originalLength} ${jobType} applications`
                 )}
               </div>
+
               
               {isSmart && jobType === 'pending' && (
                 <button 
                   onClick={handleBulkShortlist}
-                  className="btn btn-sm btn-secondary gap-2 shadow-md hover:scale-105 transition-transform"
+                  className="px-4 py-2 rounded-xl bg-purple-600 text-white font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-purple-500/20 active:scale-95"
                 >
                   ✨ Auto-Shortlist Top {arr.length}
                 </button>
+
               )}
             </div>
 
-            <table className="table">
+            <table className="table w-full">
               {/* head */}
-              <thead className="text-base font-normal">
+              <thead className="text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-white/5">
                 <tr>
-                  <th>Name</th>
-                  {isSmart && <th className="text-purple-600 font-bold">Match Score</th>}
+                  <th className="py-5">Candidate</th>
+                  {isSmart && <th className="text-purple-400">Match Score</th>}
                   <th>Cover Letter</th>
-                  <th>Resume</th>
-                  <th>Portfolio</th>
+                  <th>Documents</th>
                   {(jobType === 'pending' || jobType === 'shortlisted') && (
-                    <th>Action</th>
+                    <th className="text-right">Actions</th>
                   )}
-                  {jobType === 'hired' && <th>Status & Offer Action</th>}
+                  {jobType === 'hired' && <th className="text-right">Status & Offers</th>}
                 </tr>
               </thead>
+
               <tbody>
                 {arr.map((application) => {
                     const {
@@ -328,79 +366,91 @@ const TabContent = ({
                   return (
                     <tr key={_id}>
                       <td>
-                        <a
-                          href={`/company-dashboard/applications/${_id}/students/${applicantId}`}
-                          className="link font-semibold"
-                        >
-                          {applicantName}
-                        </a>
+                        <div className="flex flex-col">
+                          <a
+                            href={`/company-dashboard/applications/${_id}/students/${applicantId}`}
+                            className="text-sm font-bold text-slate-200 hover:text-indigo-400 transition-colors"
+                          >
+                            {applicantName}
+                          </a>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight opacity-60">ID: {applicantId?.slice(-6)}</span>
+                        </div>
                       </td>
                       {isSmart && (
                         <td>
-                          <div className="badge badge-secondary badge-outline font-bold">
+                          <div className="px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] font-black w-fit">
                             {application.matchScore}%
                           </div>
                         </td>
                       )}
-                      <td className="max-w-xs truncate">{coverLetter || 'N/A'}</td>
-                      <td>
-                        {resume ? (
-                          <a href={resume} target="_blank" rel="noreferrer" className="btn btn-ghost btn-xs text-blue-600">
-                             Resume
-                          </a>
-                        ) : 'No Resume'}
+                      <td className="max-w-[200px]">
+                        <p className="text-xs text-slate-400 line-clamp-2 italic leading-relaxed">{coverLetter || 'No cover letter provided.'}</p>
                       </td>
                       <td>
-                        {portfolio ? (
-                          <a href={portfolio} target="_blank" rel="noreferrer" className="btn btn-ghost btn-xs text-blue-600">
-                            Portfolio
-                          </a>
-                        ) : 'N/A'}
-                      </td>
-                      {jobType === 'pending' ? (
-                        <td className="flex flex-wrap gap-2">
-                          <ActionButton
-                            action="shortlist"
-                            applicationId={_id}
-                            onAction={onAction}
-                          />
-                          <ActionButton action="hire" applicationId={_id} onAction={onAction} />
-                          <ActionButton action="reject" applicationId={_id} onAction={onAction} />
-                        </td>
-                      ) : jobType == 'shortlisted' ? (
-                        <td className="flex flex-wrap gap-2">
-                          <ActionButton action="hire" applicationId={_id} onAction={onAction} />
-                          <ActionButton action="reject" applicationId={_id} onAction={onAction} />
-                        </td>
-                      ) : jobType === 'hired' ? (
-                        <td className="flex flex-wrap items-center gap-4">
-                          <StatusBadge status={status} />
-                          
-                          {status === 'HIRED' && (
-                            <button
-                              className="btn btn-xs btn-primary text-white gap-1"
-                              onClick={() => onSendOffer(_id)}
-                            >
-                              <FiSend size={12} /> Send Offer
-                            </button>
-                          )}
-
-                          {status === 'OFFER_ACCEPTED' && (
-                            <button
-                              className="btn btn-xs btn-info text-white gap-1"
-                              onClick={() => setSelectedApplicationForOffer(_id)}
-                            >
-                              <FiUpload size={12} /> {application.offerLetterUrl ? 'Update Offer Letter' : 'Upload Offer Letter'}
-                            </button>
-                          )}
-                          
-                          {application.offerLetterUrl && (
-                            <a href={application.offerLetterUrl} target="_blank" rel="noreferrer" className="text-xs link link-primary">
-                              View Letter
+                        <div className="flex gap-2">
+                          {resume && (
+                            <a href={getFileUrl(resume)} target="_blank" rel="noopener" className="p-2 rounded-lg bg-white/5 text-indigo-400 hover:bg-indigo-400/10 transition-all border border-white/5" title="Resume">
+                               📄
                             </a>
                           )}
+                          {portfolio && (
+                            <a href={portfolio} target="_blank" rel="noopener" className="p-2 rounded-lg bg-white/5 text-amber-400 hover:bg-amber-400/10 transition-all border border-white/5" title="Portfolio">
+                               💼
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                      {jobType === 'pending' ? (
+                        <td className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <ActionButton
+                              action="shortlist"
+                              applicationId={_id}
+                              onAction={onAction}
+                            />
+                            <ActionButton action="hire" applicationId={_id} onAction={onAction} />
+                            <ActionButton action="reject" applicationId={_id} onAction={onAction} />
+                          </div>
+                        </td>
+                      ) : jobType == 'shortlisted' ? (
+                        <td className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <ActionButton action="hire" applicationId={_id} onAction={onAction} />
+                            <ActionButton action="reject" applicationId={_id} onAction={onAction} />
+                          </div>
+                        </td>
+                      ) : jobType === 'hired' ? (
+                        <td className="text-right">
+                          <div className="flex flex-wrap items-center justify-end gap-3">
+                            <StatusBadge status={status} />
+                            
+                            {status === 'HIRED' && (
+                              <button
+                                className="px-3 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20"
+                                onClick={() => onSendOffer(_id)}
+                              >
+                                Send Offer
+                              </button>
+                            )}
+  
+                            {status === 'OFFER_ACCEPTED' && (
+                              <button
+                                className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-500/20"
+                                onClick={() => setSelectedApplicationForOffer(_id)}
+                              >
+                                {application.offerLetterUrl ? 'Update Offer' : 'Upload Offer'}
+                              </button>
+                            )}
+                            
+                            {application.offerLetterUrl && (
+                              <a href={getFileUrl(application.offerLetterUrl)} target="_blank" rel="noopener" className="p-1.5 rounded-lg bg-white/5 text-indigo-400 hover:text-white transition-all">
+                                📂
+                              </a>
+                            )}
+                          </div>
                         </td>
                       ) : null}
+
                     </tr>
                   );
                 })}
@@ -427,56 +477,58 @@ const TabContent = ({
 };
 
 const StatusBadge = ({ status }) => {
-  let badgeClass = "badge badge-sm font-semibold ";
+  let badgeStyle = "text-[10px] px-2.5 py-1 rounded-lg uppercase tracking-widest font-black shadow-lg ";
   let text = status;
 
   switch (status) {
     case 'HIRED':
     case 'hired':
-      badgeClass += "badge-info badge-outline";
+      badgeStyle += "bg-blue-500/10 text-blue-400 border border-blue-500/20";
       text = "HIRED";
       break;
     case 'OFFER_SENT':
-      badgeClass += "badge-warning text-white";
+      badgeStyle += "bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-amber-500/10";
       text = "OFFER SENT";
       break;
     case 'OFFER_ACCEPTED':
-      badgeClass += "badge-success text-white";
+      badgeStyle += "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-emerald-500/10";
       text = "ACCEPTED";
       break;
     case 'OFFER_REJECTED':
-      badgeClass += "badge-error text-white";
+      badgeStyle += "bg-red-500/10 text-red-400 border border-red-500/20";
       text = "REJECTED";
       break;
     default:
-      badgeClass += "badge-ghost";
+      badgeStyle += "bg-slate-800 text-slate-400 border border-white/5";
   }
 
-  return <span className={badgeClass}>{text}</span>;
+  return <span className={badgeStyle}>{text}</span>;
 }
 
+
 const ActionButton = ({ action, applicationId, onAction }) => {
-  let btnClass = 'btn btn-xs capitalize ';
+  let btnStyle = 'px-3 py-1.5 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all active:scale-90 shadow-lg ';
   switch (action) {
     case 'hire':
-      btnClass += 'btn-success text-white';
+      btnStyle += 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white';
       break;
     case 'reject':
-      btnClass += 'btn-error text-white';
+      btnStyle += 'bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600 hover:text-white';
       break;
     case 'shortlist':
-      btnClass += 'btn-warning';
+      btnStyle += 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-600 hover:text-white';
       break;
   }
 
   return (
     <button
-      className={btnClass}
+      className={btnStyle}
       onClick={() => onAction(applicationId, action)}
     >
       {action}
     </button>
   );
 };
+
 
 export default SingleJobApplication;

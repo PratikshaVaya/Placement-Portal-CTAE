@@ -1,6 +1,9 @@
 const { ObjectId } = require('mongoose').Types;
 
 function studentProfileDetailsAgg(studentId, isPrivate = false) {
+  if (!ObjectId.isValid(studentId)) {
+    return [{ $match: { _id: null } }];
+  }
   const pipeline = [
     {
       $match: {

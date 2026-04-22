@@ -109,7 +109,7 @@ const addSingleStudent = async (req, res) => {
 const updateSingleStudent = async (req, res) => {
   const id = req?.params?.id;
 
-  if (!id?.trim())
+  if (!id?.trim() || !mongoose.Types.ObjectId.isValid(id))
     throw new CustomAPIError.NotFoundError(`No student found with id: ${id}`);
 
   const { name, rollNo, isLateralEntry, courseId, departmentId, batchId } =
@@ -160,7 +160,7 @@ const updateSingleStudent = async (req, res) => {
 const deleteSingleStudent = async (req, res) => {
   const id = req?.params?.id;
 
-  if (!id?.trim())
+  if (!id?.trim() || !mongoose.Types.ObjectId.isValid(id))
     throw new CustomAPIError.NotFoundError(`No student found with id: ${id}`);
 
   const user = await UserModel.findOneAndDelete({ _id: id, role: 'student' });
@@ -237,7 +237,7 @@ const deleteSingleStudent = async (req, res) => {
 const blockStudent = async (req, res) => {
   const id = req?.params?.id;
 
-  if (!id?.trim())
+  if (!id?.trim() || !mongoose.Types.ObjectId.isValid(id))
     throw new CustomAPIError.NotFoundError(`No student found with id: ${id}`);
 
   const user = await UserModel.findOneAndUpdate(
@@ -257,7 +257,7 @@ const blockStudent = async (req, res) => {
 const unblockStudent = async (req, res) => {
   const id = req?.params?.id;
 
-  if (!id?.trim())
+  if (!id?.trim() || !mongoose.Types.ObjectId.isValid(id))
     throw new CustomAPIError.NotFoundError(`No student found with id: ${id}`);
 
   const user = await UserModel.findOneAndUpdate(
@@ -331,8 +331,8 @@ const getCompanies = async (req, res) => {
 
 const getSingleCompany = async (req, res) => {
   const companyId = req?.params?.companyId;
-  if (!companyId?.trim())
-    throw new CustomAPIError.BadRequestError('Company Id is required!');
+  if (!companyId?.trim() || !mongoose.Types.ObjectId.isValid(companyId))
+    throw new CustomAPIError.BadRequestError('Valid Company Id is required!');
 
   const company = await CompanyModel.findById(companyId).populate({
     path: 'admins',
@@ -501,6 +501,9 @@ const addCompany = async (req, res) => {
 
 const updateCompany = async (req, res) => {
   const companyId = req?.params?.companyId;
+  if (!mongoose.Types.ObjectId.isValid(companyId)) {
+    throw new CustomAPIError.BadRequestError('Invalid Company ID');
+  }
   const { companyName: name, companyEmail: email, about, accessTill } = req.body;
 
   let website = req?.body?.website;
@@ -530,22 +533,24 @@ const updateCompany = async (req, res) => {
     id: company._id,
   });
 
-  await JobOpeningModel.updateMany(
-    { 'company.id': new mongoose.Types.ObjectId(companyId) },
-    {
-      $set: {
-        'company.name': name,
-        'company.website': website,
-      },
-    }
-  );
+  if (mongoose.Types.ObjectId.isValid(companyId)) {
+    await JobOpeningModel.updateMany(
+      { 'company.id': new mongoose.Types.ObjectId(companyId) },
+      {
+        $set: {
+          'company.name': name,
+          'company.website': website,
+        },
+      }
+    );
+  }
 };
 
 const deleteCompany = async (req, res) => {
   const companyId = req?.params?.companyId;
 
-  if (!companyId?.trim())
-    throw new CustomAPIError.BadRequestError('Company Id is required!');
+  if (!companyId?.trim() || !mongoose.Types.ObjectId.isValid(companyId))
+    throw new CustomAPIError.BadRequestError('Valid Company Id is required!');
 
   const company = await CompanyModel.findById(companyId);
   if (!company)
@@ -584,8 +589,8 @@ const addCompanyAdmin = async (req, res) => {
       "Password & Confirm Password don't match!"
     );
 
-  if (!companyRole?.trim() || !companyId?.trim())
-    throw new CustomAPIError.BadRequestError('Company & Role is required!');
+  if (!companyRole?.trim() || !companyId?.trim() || !mongoose.Types.ObjectId.isValid(companyId))
+    throw new CustomAPIError.BadRequestError('Valid Company & Role is required!');
 
   const company = await CompanyModel.findById(companyId);
   if (!company)

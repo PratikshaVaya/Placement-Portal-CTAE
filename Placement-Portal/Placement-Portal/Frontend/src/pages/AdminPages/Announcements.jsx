@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { Form, redirect } from 'react-router-dom';
@@ -10,6 +10,7 @@ import {
   getBatchOptions,
   getCourseOptions,
   getDepartmentOptions,
+  getFileUrl,
 } from '../../utils';
 
 const Announcements = () => {
@@ -22,6 +23,20 @@ const Announcements = () => {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(fetchAnnouncements());
   const announcements = data?.notices ?? [];
+
+  const allUniqueBatches = useMemo(() => {
+    const years = new Set();
+    const result = [];
+    Object.values(courseOptions).forEach(course => {
+      course.batches.forEach(batch => {
+        if (!years.has(batch.batchYear)) {
+          years.add(batch.batchYear);
+          result.push({ text: batch.batchYear, value: batch.batchYear });
+        }
+      });
+    });
+    return result.sort((a, b) => String(b.text).localeCompare(String(a.text)));
+  }, [courseOptions]);
 
   const handleDeleteAnnouncement = async (id) => {
     const confirmed = window.confirm('Delete this announcement for all students?');
@@ -138,6 +153,38 @@ const Announcements = () => {
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {targetType === 'all' && (
+            <div className="form-control">
+              <label className="label justify-between gap-2">
+                <span className="label-text text-slate-300 font-medium">Filter by Batches (Optional - Leave empty for Truly All)</span>
+                <button
+                  type="button"
+                  className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                  onClick={() => selectAll('globalBatches')}
+                >
+                  Select all
+                </button>
+              </label>
+              <div className="flex flex-wrap gap-3 rounded-xl border border-white/10 bg-slate-800/30 p-4">
+                {allUniqueBatches.length ? (
+                  allUniqueBatches.map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        name="globalBatches"
+                        value={option.value}
+                        className="checkbox checkbox-xs checkbox-primary border-white/30"
+                      />
+                      <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{option.text}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-500 italic">No batches found in system.</p>
+                )}
+              </div>
             </div>
           )}
 
@@ -288,9 +335,9 @@ const Announcements = () => {
                 
                 {announcement.noticeFile && (
                   <a
-                    href={announcement.noticeFile}
+                    href={getFileUrl(announcement.noticeFile)}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener"
                     className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 text-sm font-medium border border-indigo-500/20 transition-all"
                   >
                     View Attachment
@@ -345,7 +392,8 @@ export const action = (queryClient, store) => {
       const targetType = formData.get('targetType') || 'all';
       const receivingCourse = formData.get('receivingCourse');
       const receivingDepartments = formData.getAll('receivingDepartments');
-      const receivingBatches = formData.getAll('receivingBatches');
+      let receivingBatches = formData.getAll('receivingBatches');
+      const globalBatches = formData.getAll('globalBatches');
 
       const noticeTitle = formData.get('noticeTitle');
       const noticeBody = formData.get('noticeBody');
@@ -359,6 +407,20 @@ export const action = (queryClient, store) => {
         if (!receivingCourse || receivingCourse === '-1' || receivingCourse === 'Select Course') {
           throw new Error('Please select a target course!');
         }
+      }
+
+      // If Global All Students with Batch Filter
+      if (targetType === 'all' && globalBatches.length > 0) {
+        const courseOptions = store.getState().courseOptions;
+        const resolvedBatchIds = [];
+        Object.values(courseOptions).forEach(course => {
+          course.batches.forEach(batch => {
+            if (globalBatches.includes(batch.batchYear)) {
+              resolvedBatchIds.push(batch.batchId);
+            }
+          });
+        });
+        receivingBatches = resolvedBatchIds;
       }
 
       if (targetType === 'branch' && !receivingDepartments.length) {
@@ -386,7 +448,7 @@ export const action = (queryClient, store) => {
         payload.append('receivingDepartments', JSON.stringify(receivingDepartments));
       }
 
-      if (receivingBatches.length && targetType !== 'course') {
+      if (receivingBatches.length) {
         payload.append('receivingBatches', JSON.stringify(receivingBatches));
       }
 

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const cloudinary = require('cloudinary').v2;
 
 const CustomAPIError = require('../errors');
@@ -29,49 +30,45 @@ const fileUpload = async (file, folder, acceptType) => {
     );
   }
 
-  // For documents (like resumes), save locally to avoid Cloudinary's 401 PDF block
-  if (acceptType === 'document') {
-    const publicFolder = path.resolve(__dirname, '../public/resumes');
-    if (!fs.existsSync(publicFolder)) {
-      fs.mkdirSync(publicFolder, { recursive: true });
-    }
-
-    const newFileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-    const destinationPath = path.join(publicFolder, newFileName);
-    
-    await file.mv(destinationPath);
-    console.log(`Document uploaded locally! -> ${newFileName}`);
-    
-    return {
-      success: true,
-      message: 'File Uploaded',
-      fileURL: `http://localhost:5000/resumes/${newFileName}`,
-    };
-  }
-
-  // Fallback for images via Cloudinary
+  // Use temporary folder for initial processing
   const tmpFolder = path.resolve(__dirname, '../tmp');
   if (!fs.existsSync(tmpFolder)) {
     fs.mkdirSync(tmpFolder, { recursive: true });
   }
 
-  const filePath = path.join(tmpFolder, file.name);
-  await file.mv(filePath);
+  // Secure temporary filename
+  const extension = path.extname(file.name);
+  const tmpFileName = `${crypto.randomUUID()}${extension}`;
+  const filePath = path.join(tmpFolder, tmpFileName);
+  
+  try {
+    await file.mv(filePath);
 
-  const uploadedFile = await cloudinary.uploader.upload(filePath, {
-    use_filename: true,
-    folder,
-  });
+    // Upload to Cloudinary (Scalable & Secure)
+    const uploadedFile = await cloudinary.uploader.upload(filePath, {
+      use_filename: true,
+      unique_filename: true,
+      folder: `Placement-Portal/${folder}`,
+      resource_type: 'auto',
+      format: acceptType === 'document' ? 'pdf' : undefined,
+    });
 
-  fs.unlinkSync(filePath);
-
-  if (uploadedFile) {
-    console.log(`File upload successful!`);
-    return {
-      success: true,
-      message: 'File Uploaded',
-      fileURL: uploadedFile?.secure_url,
-    };
+    if (uploadedFile) {
+      console.log(`File upload successful! -> ${uploadedFile.secure_url}`);
+      return {
+        success: true,
+        message: 'File Uploaded',
+        fileURL: uploadedFile?.secure_url,
+      };
+    }
+  } catch (error) {
+    console.error('Cloudinary Upload Error:', error);
+    throw new CustomAPIError.InternalServerError('File upload failed!');
+  } finally {
+    // Cleanup temporary file
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
   }
 
   throw new Error('File upload failed!');

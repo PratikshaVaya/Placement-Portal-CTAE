@@ -128,6 +128,11 @@ const getJobsForStudent = async (req, res) => {
 
 const getStudentJobById = async (req, res) => {
   const jobId = req?.params?.jobId;
+
+  if (!mongoose.Types.ObjectId.isValid(jobId)) {
+    throw new CustomAPIError.BadRequestError('Invalid Job ID');
+  }
+
   const { batchId, departmentId, courseId, userId } = req.user;
 
   const job = (

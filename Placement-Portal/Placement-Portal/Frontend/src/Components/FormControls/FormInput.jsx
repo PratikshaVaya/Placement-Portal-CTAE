@@ -4,21 +4,22 @@ const FormInput = ({
   type,
   defaultValue,
   size,
+  placeholder,
   isRequired = true,
   className = '',
   labelColor = 'text-slate-300',
   icon: Icon,
 }) => {
   return (
-    <div className="form-control w-full">
-      <label htmlFor={name} className="label py-1.5">
-        <span className={`text-sm font-semibold capitalize ${labelColor}`}>
+    <div className="form-control w-full space-y-2 group">
+      <label htmlFor={name} className="flex items-center gap-2 px-1">
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-focus-within:text-indigo-400 transition-colors">
           {label}
         </span>
       </label>
-      <div className="relative group">
+      <div className="relative">
         {Icon && (
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-400 transition-colors z-10">
+          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors z-10 pointer-events-none">
             <Icon size={18} />
           </div>
         )}
@@ -27,8 +28,9 @@ const FormInput = ({
           type={type}
           name={name}
           defaultValue={defaultValue}
-          className={`input input-bordered w-full transition-all duration-200 bg-slate-800/50 text-white border-white/10 focus:border-indigo-500 ${
-            Icon ? 'pl-11' : ''
+          placeholder={placeholder}
+          className={`w-full bg-black/20 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner ${
+            Icon ? 'pl-14' : ''
           } ${size} ${className}`}
           required={isRequired}
         />

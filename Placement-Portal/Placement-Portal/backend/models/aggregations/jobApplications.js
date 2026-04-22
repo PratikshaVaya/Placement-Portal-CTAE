@@ -82,12 +82,14 @@ function buildSort(sortBy) {
 }
 
 function jobApplicationsAgg({ companyId }) {
+  if (!mongoose.Types.ObjectId.isValid(companyId)) {
+     throw new Error('Invalid Company ID passed to aggregation');
+  }
   companyId = new mongoose.Types.ObjectId(companyId);
   return [
     {
       $match: {
         'company.id': companyId,
-        status: 'open',
         applications: {
           $exists: true,
           $not: {
@@ -225,6 +227,9 @@ function jobApplicationsAgg({ companyId }) {
 
 // Enhanced aggregation function supporting filters
 function jobApplicationsAggWithFilters({ companyId, filters = {} }) {
+  if (!mongoose.Types.ObjectId.isValid(companyId)) {
+     throw new Error('Invalid Company ID passed to aggregation');
+  }
   companyId = new mongoose.Types.ObjectId(companyId);
   
   const filterMatch = buildFilterMatch(filters);
@@ -234,7 +239,6 @@ function jobApplicationsAggWithFilters({ companyId, filters = {} }) {
     {
       $match: {
         'company.id': companyId,
-        status: 'open',
         applications: {
           $exists: true,
           $not: {
@@ -375,6 +379,9 @@ function jobApplicationsAggWithFilters({ companyId, filters = {} }) {
 }
 
 function singleJobApplicationsAgg({ jobId, companyId }) {
+  if (!mongoose.Types.ObjectId.isValid(jobId) || !mongoose.Types.ObjectId.isValid(companyId)) {
+    return [{ $match: { _id: null } }];
+  }
   jobId = new mongoose.Types.ObjectId(jobId);
   companyId = new mongoose.Types.ObjectId(companyId);
   return [
@@ -522,6 +529,9 @@ function singleJobApplicationsAgg({ jobId, companyId }) {
 }
 
 function studentJobApplicationsAgg({ applicantId }) {
+  if (!mongoose.Types.ObjectId.isValid(applicantId)) {
+    return [{ $match: { _id: null } }];
+  }
   applicantId = new mongoose.Types.ObjectId(applicantId);
   return [
     {

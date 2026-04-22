@@ -34,7 +34,7 @@ const AddSingleStudent = () => {
 
   return (
     <dialog id="addSingleStudentModal" className="modal backdrop-blur-sm">
-      <div className="modal-box bg-slate-900 border border-white/10 shadow-2xl p-0 overflow-hidden max-w-2xl custom-scrollbar">
+      <div className="modal-box bg-slate-900 border border-white/10 shadow-2xl p-0 overflow-y-auto max-h-[90vh] max-w-2xl custom-scrollbar">
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex justify-between items-center">
           <h3 className="font-bold text-xl text-white capitalize">
             {action} Student

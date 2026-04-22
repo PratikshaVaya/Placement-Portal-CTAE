@@ -2,8 +2,8 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const UserModel = require('./models/User');
 
-const ADMIN_EMAIL = 'admin@gmail.com';
-const ADMIN_PASSWORD = 'admin1234'; // Change this to your desired password
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@gmail.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin1234';
 const ADMIN_NAME = 'Admin';
 
 async function createAdmin() {

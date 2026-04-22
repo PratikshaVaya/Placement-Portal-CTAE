@@ -66,53 +66,80 @@ const OfferUploadModal = ({ applicationId, onClose }) => {
   const offer = offerData?.offer;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <h2 className="text-2xl font-bold mb-4">Upload Offer Letter</h2>
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+      <div className="bg-slate-900/90 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 shadow-2xl max-w-md w-full p-8 relative overflow-hidden group">
+        {/* Decorative Glow */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-indigo-500/20"></div>
+        
+        <h2 className="text-3xl font-black text-white tracking-tight mb-6 flex items-center gap-3 relative z-10">
+          <div className="w-1.5 h-8 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+          Upload Offer <span className="text-indigo-400">Letter</span>
+        </h2>
 
         {offer?.status === 'OFFER_ACCEPTED' || offer?.status === 'accepted' ? (
-          <>
-            <div className="mb-4">
-              <p className="text-gray-600 mb-4">
-                The student has accepted the offer. You can now upload the offer letter document.
+          <div className="relative z-10">
+            <div className="mb-8">
+              <p className="text-slate-400 text-sm font-medium leading-relaxed mb-6">
+                The student has accepted the offer. Please upload the formal offer letter document to finalize the process.
               </p>
 
               {offer?.offerLetter && (
-                <div className="mb-4 bg-green-50 border border-green-200 rounded p-3">
-                  <p className="text-green-800 text-sm font-medium">
-                    ✓ Offer letter already uploaded
-                  </p>
-                  <a
-                    href={offer.offerLetter}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 text-sm underline block mt-2"
-                  >
-                    View Current Offer Letter
-                  </a>
+                <div className="mb-8 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-5 backdrop-blur-xl shadow-inner group/success">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                      ✓
+                    </div>
+                    <div>
+                      <p className="text-emerald-400 text-xs font-black uppercase tracking-widest">
+                        Already Uploaded
+                      </p>
+                      <a
+                        href={offer.offerLetter}
+                        target="_blank"
+                        rel="noopener"
+                        className="text-indigo-400 hover:text-indigo-300 text-[10px] font-bold underline mt-1 block transition-colors"
+                      >
+                        View Current Document
+                      </a>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Select PDF or Document</span>
+              <div className="space-y-4">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+                  Select PDF or Document
                 </label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleFileChange}
-                  disabled={uploadMutation.isPending}
-                  className="file-input file-input-bordered w-full"
-                />
-                {file && <p className="text-sm text-gray-600 mt-2">Selected: {file.name}</p>}
+                <div className="relative group/input">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileChange}
+                    disabled={uploadMutation.isPending}
+                    className="hidden"
+                    id="offer-file-upload"
+                  />
+                  <label
+                    htmlFor="offer-file-upload"
+                    className="flex items-center justify-between w-full bg-white/5 border border-white/10 rounded-2xl p-4 cursor-pointer group-hover/input:border-indigo-500/50 transition-all duration-300 shadow-inner"
+                  >
+                    <span className="text-slate-400 text-xs font-medium truncate max-w-[200px]">
+                      {file ? file.name : "No file chosen"}
+                    </span>
+                    <span className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest group-hover/input:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20">
+                      Choose File
+                    </span>
+                  </label>
+                </div>
+                <p className="text-[9px] text-slate-500 italic ml-1 italic">Maximum file size: 10MB (PDF, DOCX)</p>
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <button
                 onClick={onClose}
-                className="btn btn-ghost flex-1"
+                className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/5 text-slate-300 text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95"
                 disabled={uploadMutation.isPending}
               >
                 Cancel
@@ -120,20 +147,31 @@ const OfferUploadModal = ({ applicationId, onClose }) => {
               <button
                 onClick={handleUpload}
                 disabled={!file || uploadMutation.isPending}
-                className="btn btn-primary flex-1"
+                className={`flex-1 py-4 rounded-2xl text-white text-xs font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 ${
+                  !file || uploadMutation.isPending 
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50' 
+                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-500/25'
+                }`}
               >
-                {uploadMutation.isPending ? 'Uploading...' : 'Upload'}
+                {uploadMutation.isPending ? 'Uploading...' : 'Upload Now'}
               </button>
             </div>
-          </>
+          </div>
         ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded p-4 text-yellow-800">
-            <p>You can only upload an offer letter after the student accepts the offer.</p>
-            <p className="text-sm mt-2">
-              Current status: <span className="font-medium">{offer?.status?.toUpperCase()}</span>
+          <div className="relative z-10 bg-rose-500/5 border border-rose-500/20 rounded-3xl p-8 text-center backdrop-blur-xl">
+            <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center text-3xl mx-auto mb-4">⚠️</div>
+            <h4 className="text-white font-black text-lg mb-2">Access Restricted</h4>
+            <p className="text-slate-400 text-sm leading-relaxed mb-6">
+              You can only upload an offer letter after the student accepts the offer.
             </p>
-            <button onClick={onClose} className="btn btn-sm btn-ghost mt-4 w-full">
-              Close
+            <div className="px-4 py-2 rounded-xl bg-slate-900 border border-white/5 text-slate-500 text-[10px] font-black uppercase tracking-widest mb-8">
+              Current Status: <span className="text-rose-400 ml-1">{offer?.status?.toUpperCase() || 'UNKNOWN'}</span>
+            </div>
+            <button 
+              onClick={onClose} 
+              className="w-full py-4 rounded-2xl bg-white/5 border border-white/5 text-slate-300 text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+            >
+              Back to Applications
             </button>
           </div>
         )}

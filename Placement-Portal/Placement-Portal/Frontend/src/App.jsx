@@ -224,6 +224,11 @@ const router = createBrowserRouter([
             index: true,
           },
           {
+            path: 'create',
+            element: <JobCreatePage />,
+            action: createJobAction(queryClient, store),
+          },
+          {
             path: ':jobId',
             children: [
               {

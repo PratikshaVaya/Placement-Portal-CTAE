@@ -13,6 +13,8 @@ const mongoSanitize = require('express-mongo-sanitize');
 
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const fileUpload = require('express-fileupload');
 
@@ -44,6 +46,7 @@ const noticeRouter = require('./routes/noticeRoutes');
 const adminRouter = require('./routes/adminRoutes');
 const companyRouter = require('./routes/companyRoutes');
 const aiResumeRouter = require('./routes/aiResumeRoutes');
+const { viewDocument } = require('./controllers/documentController');
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -68,6 +71,30 @@ app.options('*', cors(corsOptions));
 
 app.use(cookieParser(process.env.JWT_SECRET));
 app.use(morgan('tiny'));
+
+// Security Middlewares
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+  })
+);
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10, // stricter limit for login/register
+  message: 'Too many login attempts, please try again after 15 minutes',
+});
+
+app.use('/api', limiter);
+app.use('/api/v1/auth/login', authLimiter);
+app.use('/api/v1/auth/register', authLimiter);
 
 app.use(express.json());
 app.use(xss());
@@ -104,6 +131,8 @@ app.use('/api/v1/ai-resume', [
   authorizeRoles('student'),
   aiResumeRouter,
 ]);
+
+app.get('/api/v1/document/view', authenticateUser, viewDocument);
 
 app.use(notFoundHandler);
 app.use(errorHandlerMiddleware);

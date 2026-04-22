@@ -11,11 +11,15 @@ const CurrentCourseEducation = ({
   const aggregateGPA = data?.aggregateGPA || '';
 
   return (
-    <div>
-      <h3 className="text-xl font-medium mb-4 capitalize">
-        {courseLevel} Details
-      </h3>
-      <Form method="POST" className="flex flex-col gap-y-8">
+    <div className="p-2 sm:p-4">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-1 h-6 bg-indigo-500 rounded-full"></div>
+        <h3 className="text-xl font-black text-white tracking-tight capitalize">
+          {courseLevel} <span className="text-indigo-400">Academic Record</span>
+        </h3>
+      </div>
+
+      <Form method="POST" className="flex flex-col gap-10">
         <input
           type="number"
           name="semestersCount"
@@ -34,38 +38,46 @@ const CurrentCourseEducation = ({
           defaultValue={courseLevel}
           hidden
         />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
           {getFormFields({ semestersCount, isLateralEntry, data, type })}
         </div>
-        {type === 'private' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <NumberInput
-              label="Overall GPA"
-              name="aggregateGPA"
-              defaultValue={aggregateGPA}
-              minValue={0}
-              maxValue={10}
-              step={0.01}
-            />
-          </div>
-        ) : (
-          aggregateGPA !== '' && (
-            <p className="text-sm text-slate-700">
-              <span className="font-medium">Overall GPA:</span> {aggregateGPA}
-            </p>
-          )
-        )}
-        <p id="currentCourseError"></p>
-        {type === 'private' && (
-          <button
-            type="submit"
-            className="btn btn-success max-w-fit self-end text-white btn-sm h-9 px-4"
-            name="intent"
-            value="updateCurrentEducation"
-          >
-            Update
-          </button>
-        )}
+
+        <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-6">
+          {type === 'private' ? (
+            <div className="w-full sm:w-1/2 max-w-xs">
+              <NumberInput
+                label="Overall Cumulative GPA"
+                name="aggregateGPA"
+                defaultValue={aggregateGPA}
+                minValue={0}
+                maxValue={10}
+                step={0.01}
+                placeholder="0.00"
+              />
+            </div>
+          ) : (
+            aggregateGPA !== '' && (
+              <div className="px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
+                <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Cumulative GPA</span>
+                <span className="text-emerald-400 font-black text-xl">{aggregateGPA}</span>
+              </div>
+            )
+          )}
+
+          <div id="currentCourseError" className="text-red-500 text-xs font-medium"></div>
+
+          {type === 'private' && (
+            <button
+              type="submit"
+              className="px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-sm transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+              name="intent"
+              value="updateCurrentEducation"
+            >
+              Update Academic Record
+            </button>
+          )}
+        </div>
       </Form>
     </div>
   );

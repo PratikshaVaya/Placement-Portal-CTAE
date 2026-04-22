@@ -97,7 +97,7 @@ const Navbar = ({ options }) => {
             className="btn btn-sm  btn-primary"
             onClick={() => {
               // window.location.href = '/company-dashboard/create-job?action=create';
-              navigate('create-job');
+              navigate('/company-dashboard/create-job');
             }}
           >
             Create Job

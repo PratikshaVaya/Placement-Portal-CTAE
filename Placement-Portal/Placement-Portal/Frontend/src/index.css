@@ -14,31 +14,76 @@
 @media print {
   @page {
     size: letter;
-    margin: 0;
+    margin: 0.5in;
   }
 
-  body * {
-    visibility: hidden;
-  }
-  
-  #resume-print-area, #resume-print-area * {
-    visibility: visible;
-  }
-  
-  #resume-print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0.5in;
-    box-sizing: border-box;
-    background: white;
+  /* Reset body for print */
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: auto !important;
   }
 
-  #resume-print-area {
-    page-break-after: avoid;
-    page-break-before: avoid;
-    break-inside: avoid;
+  /* Hide navigation and UI elements */
+  nav, .navbar, footer, button, .no-print, [role="navigation"] {
+    display: none !important;
   }
+
+  /* Reset potential layout containers that might interfere */
+  .min-h-screen, .max-w-7xl, .max-w-6xl, .max-w-\[1600px\], .mx-auto {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    backdrop-filter: none !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure the grid layout doesn't split or hide columns */
+  .grid {
+    display: block !important;
+  }
+
+  /* Targeted show for the print area */
+  #resume-print-area {
+    display: block !important;
+    visibility: visible !important;
+    position: relative !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  #resume-print-area * {
+    visibility: visible !important;
+    color: black !important;
+  }
+
+  /* Fix for background graphics if needed */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

@@ -71,7 +71,7 @@ export const loader = (queryClient, store) => {
         error?.response?.data?.message || 'Failed to fetch job!';
       console.log(error);
       toast.error(errorMessage);
-      return null;
+      throw error;
     }
   };
 };
@@ -110,267 +110,280 @@ const SingleJob = () => {
   const dispatch = useDispatch();
 
   return (
-    <div className="p-8 flex flex-col gap-y-4">
+    <div className="max-w-6xl mx-auto flex flex-col gap-10 animate-in fade-in duration-700">
       <JobApplicationForm />
-      <div className="flex gap-x-4">
-        <div className="flex gap-x-4">
-          <h3 className="font-semibold tracking-wide text-2xl">{profile}</h3>
-          {role == 'student' &&
-            (applicationStatus == 'APPLIED' ? (
-              <button className="w-fit self-center text-white btn btn-sm btn-info">
-                Applied
-              </button>
-            ) : applicationStatus == 'HIRED' || applicationStatus == 'OFFER_SENT' || applicationStatus == 'OFFER_ACCEPTED' ? (
-              <button className="w-fit self-center text-white btn btn-sm btn-success">
-                Hired / Offer Received
-              </button>
-            ) : applicationStatus == 'REJECTED' || applicationStatus == 'OFFER_REJECTED' ? (
-              <button className=" w-fit self-center btn btn-sm btn-error">
-                Rejected
-              </button>
-            ) : applicationStatus == 'SHORTLISTED' ? (
-              <button className=" w-fit self-center btn btn-sm btn-warning">
-                Shortlisted
-              </button>
-            ) : hasOfferState ? (
-              <button className="w-fit self-center btn btn-sm btn-info btn-disabled opacity-60 font-bold" disabled>
-                {hiredStatus === 'OFFER_ACCEPTED'
-                  ? 'OFFER FINALIZED ✅'
-                  : 'OFFER FINALIZED ❌'}
-              </button>
-            ) : (
-              <button
-                type="button"
-                className={`w-fit self-center text-white btn btn-sm ${enableEligibilityFilter &&
-                  eligibilityStatus &&
-                  eligibilityStatus.isEligible === false
-                  ? 'btn-disabled btn-error opacity-50 pointer-events-none'
-                  : 'btn-success hover:scale-125'
-                  }`}
-                onClick={() => {
-                  const isNotEligible =
-                    enableEligibilityFilter &&
-                    eligibilityStatus &&
-                    eligibilityStatus.isEligible === false;
-
-                  if (isNotEligible) return;
-
-                  dispatch(
-                    setJobApply({
-                      jobApply: {
-                        jobId: _id,
-                        profile,
-                        company: company.name,
-                        isEligible: !isNotEligible,
-                        reasons: eligibilityStatus?.reasons || [],
-                      },
-                    })
-                  );
-                  document.getElementById('jobApplicationModal').showModal();
-                }}
-                disabled={
-                  enableEligibilityFilter &&
-                  eligibilityStatus &&
-                  eligibilityStatus.isEligible === false
-                }
-              >
-                {enableEligibilityFilter &&
-                  eligibilityStatus &&
-                  eligibilityStatus.isEligible === false
-                  ? 'Not Eligible'
-                  : 'Apply'}
-              </button>
-            ))}
-        </div>
-        {role == 'company_admin' && applicationsCount === 0 && (
-          <div className="flex items-center gap-2 justify-end">
-            <Link to={`/company-dashboard/edit-job/${_id}`}>
-              <FaEdit />
-            </Link>
-            <button
-              onClick={() =>
-                handleDeleteJob({ queryClient, dispatch, id: _id })
-              }
-            >
-              <MdDelete />
-            </button>
+      
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start gap-6 bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-[3rem] shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-[100px] -ml-32 -mt-32"></div>
+        
+        <div className="relative z-10 flex-1">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              Job Opportunity
+            </span>
+            <div className="w-1 h-1 rounded-full bg-slate-700"></div>
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+              {new Date(deadline) < new Date() ? 'Open' : 'Active'}
+            </span>
           </div>
-        )}
-      </div>
+          
+          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight mb-2">
+            {profile}
+          </h1>
+          
+          <div className="flex items-center gap-3 flex-wrap">
+            <a
+              className="text-xl font-bold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-2"
+              href={company?.website ? getCompanyWebsite(company.website) : ''}
+              target="_blank"
+            >
+              {company.name} <FaExternalLinkAlt size={14} className="opacity-50" />
+            </a>
+            <span className="text-slate-700">|</span>
+            <span className="text-slate-300 font-medium">Posted by {postedBy.name}</span>
+          </div>
+        </div>
 
-      <a
-        className="font-bold flex gap-2 items-center tracking-wider link max-w-[50%] "
-        href={company?.website ? getCompanyWebsite(company.website) : ''}
-        target="_blank"
-      >
-        {company.name} <FaExternalLinkAlt />
-      </a>
-
-      <div className="flex flex-wrap gap-x-16 gap-y-4">
-        {/* LEFT */}
-        <div
-          className={`md:max-w-[${role === 'company_admin' ? 40 : 30
-            }%] flex flex-col gap-y-2`}
-        >
-          <p>
-            <span className="font-medium">Posted By:</span> {postedBy.name}
-          </p>
-          <p>
-            <span className="font-medium">Openings Count:</span> {openingsCount}
-          </p>
-          <p className="flex items-center gap-x-2">
-            <span className="font-medium">Applications Count:</span>{' '}
-            {applicationsCount}{' '}
-            {role === 'company_admin' && (
-              <Link to="applications">
-                <FiExternalLink />
-              </Link>
-            )}
-          </p>
-
-          {role === 'company_admin' && (
-            <>
-              <div>
-                <span className="font-medium">Receiving Courses:</span>{' '}
-                {job?.receivingCourses
-                  ?.map((course) => course?.courseName)
-                  ?.join(', ')}
-              </div>
-              <div>
-                <span className="font-medium">Receiving Batch:</span>{' '}
-                {Array.isArray(job?.receivingBatch) 
-                  ? job.receivingBatch.map(b => b.batchYear).join(', ')
-                  : job?.receivingBatch?.batchYear || 'N/A'}
-              </div>
-              <div>
-                <span className="font-medium">Receiving Departments:</span>{' '}
-                {job?.receivingDepartments
-                  ?.map((dept) => dept?.departmentName)
-                  ?.join(', ')}
-              </div>
-            </>
+        <div className="relative z-10 flex flex-col gap-4 items-end">
+          {role == 'student' && (
+            <div className="flex flex-col items-end gap-2">
+              {applicationStatus == 'APPLIED' ? (
+                <div className="px-6 py-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-black text-sm shadow-lg shadow-indigo-500/5">
+                  ✓ Application Submitted
+                </div>
+              ) : applicationStatus == 'HIRED' || applicationStatus == 'OFFER_SENT' || applicationStatus == 'OFFER_ACCEPTED' ? (
+                <div className="px-6 py-3 rounded-2xl bg-emerald-500 text-white font-black text-sm shadow-xl shadow-emerald-500/20">
+                  🎉 Selected / Offer Received
+                </div>
+              ) : applicationStatus == 'REJECTED' || applicationStatus == 'OFFER_REJECTED' ? (
+                <div className="px-6 py-3 rounded-2xl bg-red-500 text-white font-black text-sm shadow-xl shadow-red-500/20">
+                  Application Closed
+                </div>
+              ) : applicationStatus == 'SHORTLISTED' ? (
+                <div className="px-6 py-3 rounded-2xl bg-orange-500 text-white font-black text-sm shadow-xl shadow-orange-500/20">
+                  ⚡ Shortlisted
+                </div>
+              ) : hasOfferState ? (
+                <div className="px-6 py-3 rounded-2xl bg-slate-800 text-slate-500 font-black text-sm opacity-60">
+                  {hiredStatus === 'OFFER_ACCEPTED' ? 'OFFER FINALIZED ✅' : 'OFFER FINALIZED ❌'}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={`px-10 py-4 rounded-2xl font-black text-sm transition-all shadow-2xl active:scale-95 ${
+                    (enableEligibilityFilter && eligibilityStatus?.isEligible === false) || new Date(deadline) < new Date()
+                    ? 'bg-red-500/10 border border-red-500/20 text-red-500 cursor-not-allowed opacity-50'
+                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-500/30'
+                  }`}
+                  onClick={() => {
+                    if (enableEligibilityFilter && eligibilityStatus?.isEligible === false) return;
+                    if (new Date(deadline) < new Date()) return;
+                    dispatch(
+                      setJobApply({
+                        jobApply: {
+                          jobId: _id,
+                          profile,
+                          company: company.name,
+                          isEligible: true,
+                          reasons: eligibilityStatus?.reasons || [],
+                        },
+                      })
+                    );
+                    document.getElementById('jobApplicationModal').showModal();
+                  }}
+                  disabled={(enableEligibilityFilter && eligibilityStatus?.isEligible === false) || new Date(deadline) < new Date()}
+                >
+                  {new Date(deadline) < new Date() 
+                    ? 'Application Closed' 
+                    : enableEligibilityFilter && eligibilityStatus?.isEligible === false 
+                    ? 'Ineligible to Apply' 
+                    : 'Apply for this Role'}
+                </button>
+              )}
+            </div>
           )}
 
-          <p>
-            <span className="font-medium">Deadline:</span>{' '}
-            {new Date(deadline).toLocaleDateString()}
-          </p>
-          <p>
-            <span className="font-medium">Location:</span> {location}
-          </p>
-          <p>
-            <span className="font-medium">Package:</span> {jobPackage} LPA
-          </p>
-        </div>
-
-        {/* END */}
-        <div
-          className={`md:max-w-[${role === 'company_admin' ? 55 : 65
-            }%] flex flex-col gap-y-2`}
-        >
-          <p className="font-medium">Key Skills:</p>
-          <div className="flex flex-wrap gap-4">
-            {keySkills.map((skill, idx) => (
-              <span
-                key={idx}
-                className="inline-block py-1 px-2 rounded-lg text-sm bg-slate-200"
+          {role == 'company_admin' && (
+            <div className="flex items-center gap-3">
+              <Link 
+                to={`/company-dashboard/edit-job/${_id}`}
+                className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all shadow-xl"
+                title="Edit Job"
               >
-                {skill}
-              </span>
-            ))}
-          </div>
+                <FaEdit size={20} />
+              </Link>
+              {applicationsCount === 0 && (
+                <button
+                  onClick={() => handleDeleteJob({ queryClient, dispatch, id: _id })}
+                  className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-all shadow-xl"
+                  title="Delete Job"
+                >
+                  <MdDelete size={20} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ELIGIBILITY CRITERIA SECTION */}
-      {enableEligibilityFilter && eligibilityCriteria && (
-        <div className="mt-6 p-4 border-l-4 border-blue-500 bg-blue-50 rounded-lg">
-          <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-            <span>📋</span> Academic Eligibility Criteria
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            {eligibilityCriteria?.tenthPercentage && (
-              <p>
-                <span className="font-medium">10th Percentage:</span>{' '}
-                {eligibilityCriteria.tenthPercentage}%
-              </p>
-            )}
-            {eligibilityCriteria?.twelfthPercentage && (
-              <p>
-                <span className="font-medium">12th Percentage:</span>{' '}
-                {eligibilityCriteria.twelfthPercentage}%
-              </p>
-            )}
-            {eligibilityCriteria?.diplomaPercentage && (
-              <p>
-                <span className="font-medium">Diploma Percentage:</span>{' '}
-                {eligibilityCriteria.diplomaPercentage}%
-              </p>
-            )}
-            {eligibilityCriteria?.graduationPercentage && (
-              <p>
-                <span className="font-medium">Graduation Percentage:</span>{' '}
-                {eligibilityCriteria.graduationPercentage}%
-              </p>
-            )}
-            {eligibilityCriteria?.graduationCGPA && (
-              <p>
-                <span className="font-medium">Graduation CGPA:</span>{' '}
-                {eligibilityCriteria.graduationCGPA}
-              </p>
-            )}
-            {eligibilityCriteria?.maxActiveBacklogs !== undefined && eligibilityCriteria?.maxActiveBacklogs !== null && (
-              <p>
-                <span className="font-medium">Max Active Backlogs:</span>{' '}
-                {eligibilityCriteria.maxActiveBacklogs}
-              </p>
-            )}
-            {eligibilityCriteria?.maxCompletedBacklogs !== undefined && eligibilityCriteria?.maxCompletedBacklogs !== null && (
-              <p>
-                <span className="font-medium">Max Completed Backlogs:</span>{' '}
-                {eligibilityCriteria.maxCompletedBacklogs}
-              </p>
-            )}
-            {eligibilityCriteria?.maxDOB && (
-              <p>
-                <span className="font-medium">Minimum Age:</span>{' '}
-                {Math.floor((new Date() - new Date(eligibilityCriteria.maxDOB)) / (365.25 * 24 * 60 * 60 * 1000))} years
-              </p>
-            )}
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Eligibility Panel for Students */}
+          {enableEligibilityFilter && eligibilityCriteria && (
+            <div className={`p-8 rounded-[2.5rem] border backdrop-blur-xl relative overflow-hidden bg-black/40 shadow-inner ${
+              role === 'student' && eligibilityStatus?.isEligible 
+              ? 'border-emerald-500/20' 
+              : role === 'student' && eligibilityStatus?.isEligible === false
+              ? 'border-red-500/20'
+              : 'border-white/10'
+            }`}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-xl">📋</div>
+                  <h3 className="text-xl font-black text-white tracking-tight">Academic Eligibility</h3>
+                </div>
+                {role === 'student' && eligibilityStatus && (
+                   <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                     eligibilityStatus.isEligible ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
+                   }`}>
+                     {eligibilityStatus.isEligible ? '✓ Eligible' : '✕ Ineligible'}
+                   </span>
+                )}
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4 mb-6">
+                {Object.entries({
+                  "10th Standard": eligibilityCriteria.tenthPercentage ? `${eligibilityCriteria.tenthPercentage}%` : null,
+                  "12th Standard": eligibilityCriteria.twelfthPercentage ? `${eligibilityCriteria.twelfthPercentage}%` : null,
+                  "Diploma": eligibilityCriteria.diplomaPercentage ? `${eligibilityCriteria.diplomaPercentage}%` : null,
+                  "Graduation": eligibilityCriteria.graduationPercentage ? `${eligibilityCriteria.graduationPercentage}%` : null,
+                  "Graduation CGPA": eligibilityCriteria.graduationCGPA || null,
+                  "Max Active Backlogs": eligibilityCriteria.maxActiveBacklogs ?? null,
+                  "Max Completed Backlogs": eligibilityCriteria.maxCompletedBacklogs ?? null
+                }).map(([label, value]) => value && (
+                  <div key={label} className="flex justify-between items-center py-2 border-b border-white/5">
+                    <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{label}</span>
+                    <span className="text-white font-black text-sm">{value}</span>
+                  </div>
+                ))}
+              </div>
+
+              {role === 'student' && eligibilityStatus?.reasons?.length > 0 && !eligibilityStatus.isEligible && (
+                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
+                  <p className="text-red-400 text-xs font-black uppercase tracking-widest mb-2">Requirement Mismatch:</p>
+                  <ul className="space-y-1">
+                    {eligibilityStatus.reasons.map((reason, idx) => (
+                      <li key={idx} className="text-red-300 text-sm flex items-start gap-2">
+                        <span className="mt-1.5 w-1 h-1 rounded-full bg-red-400 shrink-0"></span>
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Description */}
+          <div className="p-8 md:p-10 rounded-[3.5rem] bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden">
+            <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-600/5 rounded-full blur-[100px] -mr-32 -mb-32"></div>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-1 h-8 bg-indigo-500 rounded-full"></div>
+              <h3 className="text-2xl font-black text-white tracking-tight">Job Description</h3>
+            </div>
+            <div className="prose prose-invert prose-indigo max-w-none text-slate-400 leading-relaxed job-markdown">
+              <Markdown>{description}</Markdown>
+            </div>
+          </div>
+          
+          {role === 'company_admin' && <TopCandidates jobId={_id} />}
+        </div>
+
+        {/* Sidebar Info */}
+        <div className="space-y-8">
+          {/* Quick Stats */}
+          <div className="p-8 rounded-[2.5rem] bg-slate-900/60 border border-white/10 shadow-xl space-y-6">
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black block mb-1">Package</span>
+                  <span className="text-emerald-400 text-xl font-black">{jobPackage} LPA</span>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-xl text-emerald-500">💰</div>
+              </div>
+              
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black block mb-1">Openings</span>
+                  <span className="text-white text-xl font-black">{openingsCount} Positions</span>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-xl text-blue-500">👥</div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black block mb-1">Applications</span>
+                  <span className="text-white text-xl font-black">{applicationsCount}</span>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-xl text-indigo-500">📄</div>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-white/5 space-y-4">
+               <div className="flex justify-between items-center text-sm">
+                 <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Location</span>
+                 <span className="text-slate-200 font-black">{location}</span>
+               </div>
+               <div className="flex justify-between items-center text-sm">
+                 <span className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Deadline</span>
+                 <span className="text-red-400 font-black">{new Date(deadline).toLocaleDateString()}</span>
+               </div>
+            </div>
           </div>
 
-          {role === 'student' &&
-            eligibilityStatus &&
-            !eligibilityStatus.isEligible && (
-              <div className="mt-4 p-3 bg-red-100 border border-red-400 rounded text-red-800">
-                <h4 className="font-semibold mb-2">❌ Not Eligible</h4>
-                <ul className="list-disc list-inside space-y-1">
-                  {eligibilityStatus.reasons.map((reason, idx) => (
-                    <li key={idx} className="text-sm">
-                      {reason}
-                    </li>
+          {/* Key Skills */}
+          <div className="p-8 rounded-[2.5rem] bg-slate-900/60 border border-white/10 shadow-xl">
+             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+               <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Required Skills
+             </h3>
+             <div className="flex flex-wrap gap-2">
+               {keySkills.map((skill, idx) => (
+                 <span
+                   key={idx}
+                   className="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 bg-white/5 border border-white/10 hover:border-indigo-500/30 transition-all"
+                 >
+                   {skill}
+                 </span>
+               ))}
+             </div>
+          </div>
+
+          {/* Recruiter Details (Visible to Admins) */}
+          {role === 'company_admin' && (
+            <div className="p-8 rounded-[2.5rem] bg-indigo-600/5 border border-indigo-500/20 shadow-xl">
+               <h3 className="text-sm font-black text-indigo-300 uppercase tracking-widest mb-6">Internal Config</h3>
+               <div className="space-y-4">
+                  {[
+                    { label: "Target Courses", value: job?.receivingCourses?.map(c => c?.courseName).join(', ') },
+                    { label: "Target Batches", value: Array.isArray(job?.receivingBatch) ? job.receivingBatch.map(b => b.batchYear).join(', ') : job?.receivingBatch?.batchYear },
+                    { label: "Departments", value: job?.receivingDepartments?.map(d => d?.departmentName).join(', ') }
+                  ].map((item, i) => item.value && (
+                    <div key={i}>
+                       <span className="text-[10px] uppercase tracking-widest text-slate-600 font-black block mb-1">{item.label}</span>
+                       <span className="text-slate-300 text-xs font-medium block">{item.value}</span>
+                    </div>
                   ))}
-                </ul>
-              </div>
-            )}
-
-          {role === 'student' &&
-            eligibilityStatus &&
-            eligibilityStatus.isEligible && (
-              <div className="mt-4 p-3 bg-green-100 border border-green-400 rounded text-green-800">
-                <p className="font-semibold">✅ You meet all eligibility criteria!</p>
-              </div>
-            )}
+               </div>
+            </div>
+          )}
         </div>
-      )}
-      <div className="flex flex-col gap-y-4 job-markdown text-justify">
-        <h3 className="font-medium text-lg underline">Description:</h3>
-        <Markdown>{description}</Markdown>
       </div>
-      {role === 'company_admin' && <TopCandidates jobId={_id} />}
     </div>
   );
 };
+
 
 async function handleDeleteJob({ queryClient, dispatch, id }) {
   try {

@@ -52,7 +52,7 @@ const ResumePreview = ({ data }) => {
               key={link.name}
               href={link.url}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
               className="text-blue-700 hover:underline"
             >
               {link.name}

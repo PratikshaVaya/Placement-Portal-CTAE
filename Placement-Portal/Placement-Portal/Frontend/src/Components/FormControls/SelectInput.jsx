@@ -8,6 +8,8 @@ const SelectInput = ({
   changeFn,
   defaultValue,
   emptyMessage,
+  size,
+  isRequired = true,
   className = '',
   labelColor = 'text-slate-300',
 }) => {
@@ -23,34 +25,39 @@ const SelectInput = ({
   }, [defaultValue]);
 
   return (
-    <div className="form-control w-full">
-      <label className="label py-1.5">
-        <span className={`text-sm font-semibold capitalize ${labelColor}`}>
+    <div className="form-control w-full space-y-2 group">
+      <label htmlFor={name} className="flex items-center gap-2 px-1">
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-focus-within:text-indigo-400 transition-colors">
           {label}
         </span>
       </label>
       {options.length ? (
-        <select
-          className={`select select-bordered w-full transition-all duration-200 bg-slate-800/50 text-white border-white/10 focus:border-indigo-500 ${className}`}
-          id={id}
-          onChange={handleSelectChange}
-          name={name}
-          value={selectedOption}
-          required
-        >
-          {options.map((option) => {
-            const { text, value } = option;
-            return (
-              <option key={value} value={value} className="bg-slate-900 text-white capitalize">
-                {text}
-              </option>
-            );
-          })}
-        </select>
+        <div className="relative">
+          <select
+            name={name}
+            id={id || name}
+            value={selectedOption}
+            className={`w-full bg-black/20 border border-white/10 rounded-2xl py-4 px-6 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all shadow-inner cursor-pointer appearance-none ${size} ${className}`}
+            onChange={handleSelectChange}
+            required={isRequired}
+          >
+            {options.map((item) => {
+              return (
+                <option key={item.value} value={item.value} className="bg-slate-900 text-white capitalize">
+                  {item.text || item.value}
+                </option>
+              );
+            })}
+          </select>
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
       ) : (
         <p className="text-sm text-slate-500 italic mt-1">{emptyMessage}</p>
       )}
     </div>
   );
 };
+
 export default SelectInput;
