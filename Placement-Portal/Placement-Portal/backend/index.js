@@ -50,20 +50,23 @@ const { viewDocument } = require('./controllers/documentController');
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow all local dev origins (localhost / 127.0.0.1 on any port) or netlify
-    if (
-      !origin ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1') ||
-      origin.includes('netlify.app')
-    ) {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://localhost:3000',
+    ].filter(Boolean);
+
+    // Allow requests with no origin (like mobile apps or curl) 
+    // or if the origin is in our allowed list
+    if (!origin || allowedOrigins.some(ao => origin.startsWith(ao))) {
       callback(null, true);
     } else {
-      callback(null, false);
+      console.error(`CORS Blocked for origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
-  // preflightContinue: true,
 };
 
 app.use(cors(corsOptions));
