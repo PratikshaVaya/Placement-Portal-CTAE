@@ -53,7 +53,7 @@ async function validateJobReceivers({
     }
     courses.push({ 
       id: course._id, 
-      courseName: course.courseName.trim().toLowerCase() 
+      courseName: course.courseName.trim() 
     });
     
     // Collect all departments and batches from this course
@@ -82,7 +82,7 @@ async function validateJobReceivers({
         );
       departments.push({
         id: department._id,
-        departmentName: department.departmentName.trim().toLowerCase(),
+        departmentName: department.departmentName.trim(),
       });
     }
   }
@@ -130,9 +130,9 @@ async function validateStudentCourse({
     : course.regularSemestersCount;
 
   return {
-    courseName: course.courseName.trim().toLowerCase(),
+    courseName: course.courseName.trim(),
     courseLevel: course.courseLevel,
-    departmentName: department.departmentName.trim().toLowerCase(),
+    departmentName: department.departmentName.trim(),
     batchYear: batch.batchYear,
     yearsCount,
     semestersCount,
