@@ -30,12 +30,4 @@ const addPersonalData = async (studentPersonalInfo) => {
   }
 };
 
-// addPersonalData({
-//   student_id: "64a05adb7e56078427c9f75e",
-//   fatherName: "Ajay Kumar Jain",
-//   motherName: "Rachna Jain",
-//   address: "Subhash Nagar",
-//   state: "Uttar Pradesh",
-//   district: "Sitapur",
-//   contactNumber: "8604446338",
-// });
+// Note: Use environment variables or secure imports for production data.

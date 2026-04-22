@@ -9,10 +9,15 @@ const viewDocument = async (req, res) => {
     throw new CustomAPIError.BadRequestError('URL is required');
   }
 
-  // SSRF Protection: Only allow Cloudinary URLs from your cloud
-  const cloudName = process.env.CLOUD_NAME;
-  const allowedPrefix = `https://res.cloudinary.com/${cloudName}/`;
-  if (!url.startsWith(allowedPrefix)) {
+  // SSRF Protection: Hardened check using URL parser
+  try {
+    const targetUrl = new URL(url);
+    const cloudName = process.env.CLOUD_NAME;
+    
+    if (targetUrl.hostname !== 'res.cloudinary.com' || !targetUrl.pathname.startsWith(`/${cloudName}/`)) {
+      throw new Error('Invalid host or cloud name');
+    }
+  } catch (err) {
     throw new CustomAPIError.UnauthorizedError('Invalid document source.');
   }
 

@@ -2,8 +2,13 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const UserModel = require('./models/User');
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@gmail.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin1234';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error('❌ Error: ADMIN_EMAIL and ADMIN_PASSWORD must be set in .env');
+  process.exit(1);
+}
 const ADMIN_NAME = 'Admin';
 
 async function createAdmin() {
