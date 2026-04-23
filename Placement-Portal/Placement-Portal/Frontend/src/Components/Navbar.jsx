@@ -60,7 +60,7 @@ const Navbar = ({ options }) => {
   }
 
   return (
-    <div className="navbar bg-slate-900/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
+    <div className="navbar bg-slate-900/80 backdrop-blur-optimized border-b border-white/10 sticky top-0 z-50 smooth-gpu">
       <div className="navbar-start ml-4">
         <div className="dropdown">
           <label tabIndex={0} className="btn btn-ghost lg:hidden">
