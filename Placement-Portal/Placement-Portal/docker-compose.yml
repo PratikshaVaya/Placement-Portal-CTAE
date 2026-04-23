@@ -14,6 +14,11 @@ services:
       CLOUD_NAME: "${CLOUD_NAME:?CLOUD_NAME is required}"
       CLOUD_API_KEY: "${CLOUD_API_KEY:?CLOUD_API_KEY is required}"
       CLOUD_API_SECRET: "${CLOUD_API_SECRET:?CLOUD_API_SECRET is required}"
+      GROQ_API_KEY: "${GROQ_API_KEY:?GROQ_API_KEY is required}"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@gmail.com}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-Placement-CTAE-030}"
+      FRONTEND_URL: "${FRONTEND_URL:-http://localhost:5173}"
+      DOCUMENT_PROXY_DEBUG: "${DOCUMENT_PROXY_DEBUG:-false}"
     restart: unless-stopped
 
   frontend:
