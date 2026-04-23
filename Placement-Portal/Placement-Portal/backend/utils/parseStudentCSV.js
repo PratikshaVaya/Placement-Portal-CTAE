@@ -19,7 +19,7 @@ const {
 } = require("./courseUtils");
 
 const defaultCourseId = "64aab7909e25b89756d928ac";
-const defaultPassword = "12345678";
+const defaultPassword = process.env.DEFAULT_STUDENT_PASSWORD || "Placement-CTAE-030";
 
 (async function () {
   await connectDB(process.env.MONGO_URI);
