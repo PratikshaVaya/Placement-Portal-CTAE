@@ -19,6 +19,8 @@ services:
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-Placement-CTAE-030}"
       FRONTEND_URL: "${FRONTEND_URL:-http://localhost:5173}"
       DOCUMENT_PROXY_DEBUG: "${DOCUMENT_PROXY_DEBUG:-false}"
+      DEFAULT_STUDENT_PASSWORD: "${DEFAULT_STUDENT_PASSWORD:-Placement-CTAE-030}"
+
     restart: unless-stopped
 
   frontend:

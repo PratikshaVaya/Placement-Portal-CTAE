@@ -112,7 +112,9 @@ const buildSignedDeliveryUrlFromResource = (resource) => {
 };
 
 const viewDocument = async (req, res) => {
+  console.log('--- viewDocument Hit ---');
   const { url } = req.query;
+  console.log('Target URL:', url);
   debugLog('Incoming request', {
     hasUrl: Boolean(url),
     userId: req?.user?.userId,
@@ -654,10 +656,16 @@ const viewDocument = async (req, res) => {
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Cache-Control', 'public, max-age=3600');
 
-    response.data.pipe(res);
+    response.data.on('error', (err) => {
+      console.error('Stream error during document delivery:', err);
+      if (!res.headersSent) {
+        res.status(500).send('Stream error during document delivery');
+      }
+    }).pipe(res);
   } catch (error) {
     console.error('Document Proxy Error:', {
       message: error.message,
+      stack: error.stack,
       status: error?.response?.status,
       statusText: error?.response?.statusText,
       url,
