@@ -229,6 +229,17 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    isPlaced: {
+      type: Boolean,
+      default: false,
+    },
+
+    placementType: {
+      type: String,
+      enum: ['none', 'on-campus', 'off-campus', 'both'],
+      default: 'none',
+    },
   },
   { timestamps: true, versionKey: false }
 );

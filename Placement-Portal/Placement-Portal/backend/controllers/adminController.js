@@ -10,6 +10,7 @@ const { validateStudentCourse } = require('../utils');
 const JobOpeningModel = require('../models/JobOpenings');
 const { PlacementModel, EducationModel, CurrentScoreModel, PastScoreModel, ExperienceModel, TrainingModel, PersonalDataModel, } = require('../models/student');
 const { default: mongoose } = require('mongoose');
+const { updateStudentPlacementStatus } = require('../utils/placementUtils');
 
 const getStudents = async (req, res) => {
   const requestQuery = req.query || {};
@@ -618,7 +619,95 @@ const addCompanyAdmin = async (req, res) => {
 };
 
 const getAdminStats = async (req, res) => {
-  const hiredApplicationsAgg = [
+  // Sync all students who have at least one application or placement record
+  // to ensure legacy data is updated with the new isPlaced/placementType fields.
+  const studentsToSync = await UserModel.find({ role: 'student' }).select('_id');
+  await Promise.all(studentsToSync.map(student => updateStudentPlacementStatus(student._id)));
+
+  const [
+    studentCount,
+    companyCount,
+    jobCount,
+    placementStats,
+    deptPlacements,
+    packageStats
+  ] = await Promise.all([
+    UserModel.countDocuments({ role: 'student' }),
+    CompanyModel.countDocuments(),
+    JobOpeningModel.countDocuments(),
+    
+    // Unique placed students breakdown
+    UserModel.aggregate([
+      { $match: { role: 'student', isPlaced: true } },
+      { $group: { _id: '$placementType', count: { $sum: 1 } } }
+    ]),
+
+    // Department-wise unique placements
+    UserModel.aggregate([
+      { $match: { role: 'student', isPlaced: true } },
+      {
+        $group: {
+          _id: { $ifNull: ['$departmentName', 'Unknown'] },
+          count: { $sum: 1 }
+        }
+      }
+    ]),
+
+    // Package metrics (taking the highest package among all offers for each placed student)
+    // This is a bit more complex as we need to check both JobApplications and PlacementModel
+    JobApplicationModel.aggregate([
+      { $match: { status: { $in: ['HIRED', 'OFFER_ACCEPTED', 'OFFER_REJECTED'] } } },
+      {
+        $lookup: {
+          from: JobOpeningModel.collection.name,
+          localField: 'jobId',
+          foreignField: '_id',
+          as: 'job',
+        },
+      },
+      { $unwind: '$job' },
+      {
+        $group: {
+          _id: '$applicantId',
+          maxPackage: { $max: { $ifNull: ['$job.jobPackage', '$job.salary', '$job.package', 0] } }
+        }
+      }
+    ])
+  ]);
+
+  // Combine package data with manual placements to find the real average/highest
+  const manualPlacements = await PlacementModel.find({ isOnCampus: false });
+  const studentPackages = {};
+
+  // Process on-campus packages
+  packageStats.forEach(stat => {
+    studentPackages[stat._id.toString()] = stat.maxPackage > 100 ? stat.maxPackage / 100000 : stat.maxPackage;
+  });
+
+  // Process off-campus packages (update if higher)
+  manualPlacements.forEach(p => {
+    const pkg = p.package > 100 ? p.package / 100000 : p.package;
+    const sId = p.studentId.toString();
+    if (!studentPackages[sId] || pkg > studentPackages[sId]) {
+      studentPackages[sId] = pkg;
+    }
+  });
+
+  const packages = Object.values(studentPackages);
+  const totalHiredUnique = Object.keys(studentPackages).length;
+  const avgPackage = packages.length ? Number((packages.reduce((a, b) => a + b, 0) / packages.length).toFixed(2)) : 0;
+  const highestPackage = packages.length ? Number(Math.max(...packages).toFixed(2)) : 0;
+
+  // Breakdown counts
+  const breakdown = { onCampus: 0, offCampus: 0, both: 0 };
+  placementStats.forEach(s => {
+    if (s._id === 'on-campus') breakdown.onCampus = s.count;
+    if (s._id === 'off-campus') breakdown.offCampus = s.count;
+    if (s._id === 'both') breakdown.both = s.count;
+  });
+
+  // 7. Get detailed list of placed students (On-campus)
+  const onCampusPlacedList = await JobApplicationModel.aggregate([
     { $match: { status: { $in: ['HIRED', 'OFFER_ACCEPTED', 'OFFER_REJECTED'] } } },
     {
       $lookup: {
@@ -628,7 +717,7 @@ const getAdminStats = async (req, res) => {
         as: 'job',
       },
     },
-    { $unwind: { path: '$job', preserveNullAndEmptyArrays: false } },
+    { $unwind: '$job' },
     {
       $lookup: {
         from: UserModel.collection.name,
@@ -637,94 +726,60 @@ const getAdminStats = async (req, res) => {
         as: 'student',
       },
     },
-    { $unwind: { path: '$student', preserveNullAndEmptyArrays: false } },
+    { $unwind: '$student' },
     {
-      $addFields: {
-        jobPackageValue: {
-          $let: {
-            vars: {
-              pkgVal: {
-                $ifNull: ['$job.jobPackage', '$job.salary', '$job.package', null],
-              },
-            },
-            in: {
-              $cond: [
-                { $and: [{ $ne: ['$$pkgVal', null] }, { $ne: ['$$pkgVal', 0] }] },
-                { $cond: [{ $gt: ['$$pkgVal', 100] }, { $divide: ['$$pkgVal', 100000] }, '$$pkgVal'] },
-                null,
-              ],
-            },
-          },
-        },
+      $project: {
+        studentName: '$student.name',
+        rollNo: '$student.rollNo',
+        companyName: '$job.company.name',
+        package: { $ifNull: ['$job.jobPackage', '$job.salary', '$job.package', 0] },
+        type: { $literal: 'On-Campus' },
+        date: '$updatedAt'
+      }
+    }
+  ]);
+
+  // 8. Get detailed list of placed students (Off-campus)
+  const offCampusPlacedList = await PlacementModel.aggregate([
+    { $match: { isOnCampus: false } },
+    {
+      $lookup: {
+        from: UserModel.collection.name,
+        localField: 'studentId',
+        foreignField: '_id',
+        as: 'student',
       },
     },
+    { $unwind: '$student' },
     {
-      $facet: {
-        metrics: [
-          {
-            $group: {
-              _id: null,
-              avgPackage: {
-                $avg: {
-                  $cond: [{ $ne: ['$jobPackageValue', null] }, '$jobPackageValue', null],
-                },
-              },
-              highestPackage: {
-                $max: {
-                  $cond: [{ $ne: ['$jobPackageValue', null] }, '$jobPackageValue', null],
-                },
-              },
-              totalHired: { $sum: 1 },
-            },
-          },
-        ],
-        departmentPlacements: [
-          {
-            $group: {
-              _id: {
-                $ifNull: ['$student.departmentName', 'Unknown'],
-              },
-              count: { $sum: 1 },
-            },
-          },
-        ],
-      },
-    },
-  ];
+      $project: {
+        studentName: '$student.name',
+        rollNo: '$student.rollNo',
+        companyName: '$company',
+        package: '$package',
+        type: { $literal: 'Off-Campus' },
+        date: '$createdAt'
+      }
+    }
+  ]);
 
-  const [studentCount, companyCount, jobCount, hiredStats] =
-    await Promise.all([
-      UserModel.countDocuments({ role: 'student' }),
-      CompanyModel.countDocuments(),
-      JobOpeningModel.countDocuments(),
-      JobApplicationModel.aggregate(hiredApplicationsAgg),
-    ]);
-
-  const metricResult = hiredStats?.[0]?.metrics?.[0] || {};
-  const deptPlacements = hiredStats?.[0]?.departmentPlacements || [];
-  const totalHired = metricResult.totalHired || 0;
-
-  let avgPackage = null;
-  let highestPackage = null;
-
-  if (totalHired > 0 && metricResult.avgPackage != null) {
-    avgPackage = Number(metricResult.avgPackage.toFixed(2));
-  }
-  if (totalHired > 0 && metricResult.highestPackage != null) {
-    highestPackage = Number(metricResult.highestPackage.toFixed(2));
-  }
+  // Combine and sort by date
+  const allPlacedStudents = [...onCampusPlacedList, ...offCampusPlacedList].sort((a, b) => b.date - a.date);
 
   const stats = {
     totalStudents: studentCount,
     totalCompanies: companyCount,
     totalJobsPosted: jobCount,
-    totalCandidatesHired: totalHired,
+    totalCandidatesHired: totalHiredUnique, // Unique student count
+    onCampusPlaced: breakdown.onCampus + breakdown.both,
+    offCampusPlaced: breakdown.offCampus + breakdown.both,
     avgPackage,
     highestPackage,
     departmentPlacements: deptPlacements.map((d) => ({
-      name: d._id || 'Unknown',
+      name: d._id,
       value: d.count,
     })),
+    placedStudents: allPlacedStudents
   };
 
   res.status(StatusCodes.OK).json({

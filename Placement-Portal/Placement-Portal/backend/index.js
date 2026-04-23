@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
+app.set('trust proxy', 1);
 const httpServer = createServer(app);
 
 const xss = require('xss-clean');
@@ -73,7 +74,7 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 app.use(cookieParser(process.env.JWT_SECRET));
-app.use(morgan('tiny'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Security Middlewares
 app.use(

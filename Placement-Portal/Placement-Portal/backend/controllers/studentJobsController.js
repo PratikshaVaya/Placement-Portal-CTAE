@@ -18,6 +18,7 @@ const {
 const JobApplicationModel = require('../models/JobApplication');
 const { EducationModel } = require('../models/student');
 const OfferModel = require('../models/Offer');
+const { updateStudentPlacementStatus } = require('../utils/placementUtils');
 
 const getJobsForStudent = async (req, res) => {
   const status = req?.query?.status?.toUpperCase() || 'open';
@@ -185,10 +186,17 @@ const createJobApplication = async (req, res) => {
   const jobId = req?.params?.id;
   const { userId: applicantId } = req.user;
 
-  // Requirement 4: Application Restriction
+  // Requirement 4: Application Restriction (On-Campus Offer received)
   const applicant = await UserModel.findById(applicantId);
-  if (['OFFER_ACCEPTED', 'OFFER_REJECTED'].includes(applicant.hiredStatus)) {
-    throw new CustomAPIError.BadRequestError('You have already finalized an offer and cannot apply further.');
+  
+  // Find any on-campus offer received (Accepted, Rejected, or Sent)
+  const onCampusOffer = await JobApplicationModel.findOne({
+    applicantId,
+    status: { $in: ['OFFER_SENT', 'OFFER_ACCEPTED', 'OFFER_REJECTED', 'HIRED'] }
+  });
+
+  if (onCampusOffer) {
+    throw new CustomAPIError.BadRequestError('You have already received an on-campus offer and cannot apply further.');
   }
 
   const job = await JobOpeningModel.findById(jobId);
@@ -283,6 +291,7 @@ const acceptOffer = async (req, res) => {
 
   user.hiredStatus = 'OFFER_ACCEPTED';
   await user.save();
+  await updateStudentPlacementStatus(userId);
 
   const company = await CompanyModel.findById(application.companyId);
   company.candidatesHired = (company.candidatesHired || 0) + 1;
@@ -302,6 +311,7 @@ const rejectOffer = async (req, res) => {
 
   user.hiredStatus = 'OFFER_REJECTED';
   await user.save();
+  await updateStudentPlacementStatus(userId);
 
   res.status(StatusCodes.OK).json({ success: true, message: 'Offer rejected.' });
 };

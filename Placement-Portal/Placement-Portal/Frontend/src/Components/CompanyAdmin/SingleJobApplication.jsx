@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import OfferUploadModal from '../OfferUploadModal';
 import ApplicationFilterPanel from './ApplicationFilterPanel';
 import DocumentViewerModal from '../DocumentViewerModal';
+import CoverLetterModal from '../CoverLetterModal';
 
 const SingleJobApplication = ({
   jobId,
@@ -304,6 +305,11 @@ const TabContent = ({
     error: '',
     title: 'Document',
   });
+  const [coverLetterState, setCoverLetterState] = useState({
+    isOpen: false,
+    content: '',
+    title: '',
+  });
 
   useEffect(() => {
     return () => {
@@ -375,6 +381,12 @@ const TabContent = ({
         error={viewerState.error}
         title={viewerState.title}
         onClose={closeViewer}
+      />
+      <CoverLetterModal
+        isOpen={coverLetterState.isOpen}
+        content={coverLetterState.content}
+        title={coverLetterState.title}
+        onClose={() => setCoverLetterState({ ...coverLetterState, isOpen: false })}
       />
       <input
         type="radio"
@@ -460,7 +472,17 @@ const TabContent = ({
                         </td>
                       )}
                       <td className="max-w-[200px]">
-                        <p className="text-xs text-slate-400 line-clamp-2 italic leading-relaxed">{coverLetter || 'No cover letter provided.'}</p>
+                        <div
+                          onClick={() => {
+                            console.log("Recruiter: Cover letter clicked!", coverLetter);
+                            setCoverLetterState({ isOpen: true, content: coverLetter, title: `${applicantName} - Cover Letter` });
+                          }}
+                          className="text-left group/cl cursor-pointer"
+                        >
+                          <p className="text-xs text-slate-400 line-clamp-2 italic leading-relaxed group-hover/cl:text-indigo-400 transition-colors" title="Click to view full cover letter">
+                            {coverLetter || 'No cover letter provided.'}
+                          </p>
+                        </div>
                       </td>
                       <td>
                         <div className="flex gap-2">

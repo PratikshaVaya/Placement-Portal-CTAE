@@ -20,6 +20,7 @@ const {
   createUserToken,
   attachCookieToResponse,
 } = require('../utils');
+const { updateStudentPlacementStatus } = require('../utils/placementUtils');
 
 const getPersonalData = async (req, res) => {
   const studentId = req.user.userId;
@@ -469,6 +470,7 @@ const createPlacement = async (req, res) => {
 
   student.placements.push(placement._id);
   await student.save();
+  await updateStudentPlacementStatus(studentId);
 };
 
 const getPlacements = async (req, res) => {
@@ -572,6 +574,7 @@ const updatePlacement = async (req, res) => {
     message: 'Placement Updated!',
     id,
   });
+  await updateStudentPlacementStatus(studentId);
 };
 
 const deletePlacement = async (req, res) => {
@@ -609,6 +612,7 @@ const deletePlacement = async (req, res) => {
     (ele) => ele.toString() !== id
   );
   await student.save();
+  await updateStudentPlacementStatus(studentId);
 };
 
 const createTraining = async (req, res) => {

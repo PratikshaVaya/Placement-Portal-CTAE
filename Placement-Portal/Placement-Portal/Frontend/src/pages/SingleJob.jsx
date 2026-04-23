@@ -106,7 +106,7 @@ const SingleJob = () => {
   const hasOfferState =
     role === 'student' && 
     hiredStatus && 
-    ['OFFER_ACCEPTED', 'OFFER_REJECTED'].includes(hiredStatus);
+    ['OFFER_ACCEPTED', 'OFFER_REJECTED', 'OFFER_SENT', 'HIRED'].includes(hiredStatus);
 
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
@@ -167,8 +167,8 @@ const SingleJob = () => {
                   ⚡ Shortlisted
                 </div>
               ) : hasOfferState ? (
-                <div className="px-6 py-3 rounded-2xl bg-slate-800 text-slate-500 font-black text-sm opacity-60">
-                  {hiredStatus === 'OFFER_ACCEPTED' ? 'OFFER FINALIZED ✅' : 'OFFER FINALIZED ❌'}
+                <div className="px-6 py-3 rounded-2xl bg-slate-800 text-slate-500 font-black text-sm border border-white/5">
+                  ON-CAMPUS OFFER RECEIVED 🔒
                 </div>
               ) : (
                 <button

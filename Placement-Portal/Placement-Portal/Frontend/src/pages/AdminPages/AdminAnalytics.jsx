@@ -96,6 +96,20 @@ const AdminAnalytics = () => {
             glowColor="shadow-yellow-500/20" 
           />
           <StatCard 
+            title="On-Campus" 
+            value={stats.onCampusPlaced || 0} 
+            icon={<FaBriefcase />} 
+            iconColor="text-indigo-400" 
+            glowColor="shadow-indigo-500/20" 
+          />
+          <StatCard 
+            title="Off-Campus" 
+            value={stats.offCampusPlaced || 0} 
+            icon={<FaBuilding />} 
+            iconColor="text-pink-400" 
+            glowColor="shadow-pink-500/20" 
+          />
+          <StatCard 
             title="Avg Package" 
             value={stats.avgPackage ? `${stats.avgPackage} LPA` : 'N/A'} 
             icon={<FaRupeeSign />} 
@@ -176,7 +190,7 @@ const AdminAnalytics = () => {
               <li className="flex items-start gap-4">
                 <div className="mt-1.5 w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)] flex-shrink-0"></div>
                 <p>
-                  There are currently <strong className="text-white font-bold">{stats.totalCandidatesHired || 0}</strong> successful hires across all branches.
+                  There are <strong className="text-white font-bold">{stats.totalCandidatesHired || 0}</strong> unique students placed (On-Campus: {stats.onCampusPlaced}, Off-Campus: {stats.offCampusPlaced}).
                 </p>
               </li>
               <li className="flex items-start gap-4">
@@ -188,6 +202,67 @@ const AdminAnalytics = () => {
             </ul>
           </div>
           
+        </div>
+        
+        {/* Placed Students Detailed List */}
+        <div className="p-8 rounded-[3rem] bg-slate-900/60 backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden mt-10">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-8 bg-indigo-500 rounded-full"></div>
+              <h3 className="text-2xl font-black text-white tracking-tight">Recent Placements</h3>
+            </div>
+            <span className="px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-slate-400">
+              {stats.placedStudents?.length || 0} Total Records
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-separate border-spacing-y-3">
+              <thead>
+                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  <th className="px-6 py-4">Student Name</th>
+                  <th className="px-6 py-4">Roll No</th>
+                  <th className="px-6 py-4">Company</th>
+                  <th className="px-6 py-4">Package</th>
+                  <th className="px-6 py-4">Type</th>
+                  <th className="px-6 py-4 text-right">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.placedStudents?.map((student, idx) => (
+                  <tr key={idx} className="group bg-white/5 hover:bg-white/10 transition-colors">
+                    <td className="px-6 py-4 rounded-l-2xl border-l border-y border-white/5 font-black text-white">{student.studentName}</td>
+                    <td className="px-6 py-4 border-y border-white/5 text-slate-400 font-bold">{student.rollNo}</td>
+                    <td className="px-6 py-4 border-y border-white/5">
+                      <span className="text-indigo-400 font-black">{student.companyName}</span>
+                    </td>
+                    <td className="px-6 py-4 border-y border-white/5 font-black text-emerald-400">
+                      {student.package > 100 ? (student.package / 100000).toFixed(2) : student.package} LPA
+                    </td>
+                    <td className="px-6 py-4 border-y border-white/5">
+                      <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                        student.type === 'On-Campus' 
+                        ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' 
+                        : 'bg-pink-500/10 text-pink-400 border-pink-500/20'
+                      }`}>
+                        {student.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 rounded-r-2xl border-r border-y border-white/5 text-right text-slate-500 font-bold text-xs">
+                      {new Date(student.date).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {(!stats.placedStudents || stats.placedStudents.length === 0) && (
+              <div className="py-20 flex flex-col items-center justify-center text-center">
+                <div className="text-4xl mb-4">🔍</div>
+                <p className="text-slate-500 font-bold">No placement records found yet.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
   );

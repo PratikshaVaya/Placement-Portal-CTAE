@@ -3,6 +3,7 @@ import { Link, useLoaderData } from 'react-router-dom';
 import { FiExternalLink } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import DocumentViewerModal from '../DocumentViewerModal';
+import CoverLetterModal from '../CoverLetterModal';
 import { cleanupBlobUrl, fetchDocumentBlobUrl, getCompanyWebsite } from '../../utils';
 
 const ApplicationsContainer = () => {
@@ -46,6 +47,11 @@ const ApplicationsContainer = () => {
     fileUrl: '',
     error: '',
     fileName: 'Resume',
+  });
+  const [coverLetterState, setCoverLetterState] = useState({
+    isOpen: false,
+    content: '',
+    title: '',
   });
 
   useEffect(() => {
@@ -124,20 +130,43 @@ const ApplicationsContainer = () => {
       />
 
       <div role="tablist" className="tabs tabs-bordered border-white/5 bg-slate-900/40 p-2 rounded-2xl backdrop-blur-xl">
-        <TabContent jobType="pending" arr={pending} onViewResume={handleViewResume} />
+        <TabContent
+          jobType="pending"
+          arr={pending}
+          onViewResume={handleViewResume}
+          onViewCoverLetter={(content, title) => setCoverLetterState({ isOpen: true, content, title })}
+        />
         <TabContent
           jobType="shortlisted"
           arr={shortlisted}
           onViewResume={handleViewResume}
+          onViewCoverLetter={(content, title) => setCoverLetterState({ isOpen: true, content, title })}
         />
-        <TabContent jobType="hired" arr={hired} onViewResume={handleViewResume} />
-        <TabContent jobType="rejected" arr={rejected} onViewResume={handleViewResume} />
+        <TabContent
+          jobType="hired"
+          arr={hired}
+          onViewResume={handleViewResume}
+          onViewCoverLetter={(content, title) => setCoverLetterState({ isOpen: true, content, title })}
+        />
+        <TabContent
+          jobType="rejected"
+          arr={rejected}
+          onViewResume={handleViewResume}
+          onViewCoverLetter={(content, title) => setCoverLetterState({ isOpen: true, content, title })}
+        />
       </div>
+
+      <CoverLetterModal
+        isOpen={coverLetterState.isOpen}
+        content={coverLetterState.content}
+        title={coverLetterState.title}
+        onClose={() => setCoverLetterState({ ...coverLetterState, isOpen: false })}
+      />
     </div>
   );
 };
 
-const TabContent = ({ jobType, arr, onViewResume }) => {
+const TabContent = ({ jobType, arr, onViewResume, onViewCoverLetter }) => {
   return (
     <>
       <input
@@ -185,9 +214,17 @@ const TabContent = ({ jobType, arr, onViewResume }) => {
                         </a>
                       </td>
                       <td className="py-5 px-6">
-                        <p className="text-slate-400 text-sm italic max-w-xs truncate" title={coverLetter}>
-                          {coverLetter || "No cover letter provided"}
-                        </p>
+                        <div
+                          onClick={() => {
+                            console.log("Cover letter clicked!", coverLetter);
+                            onViewCoverLetter(coverLetter, `${profile} - Cover Letter`);
+                          }}
+                          className="text-left group/cl cursor-pointer"
+                        >
+                          <p className="text-slate-400 text-sm italic max-w-xs truncate group-hover/cl:text-indigo-400 transition-colors" title="Click to view full cover letter">
+                            {coverLetter || "No cover letter provided"}
+                          </p>
+                        </div>
                       </td>
                       <td className="py-5 px-6">
                         <button
