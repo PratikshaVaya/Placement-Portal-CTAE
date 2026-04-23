@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { customFetch } from '../utils';
+import { customFetch, cleanupBlobUrl, fetchDocumentBlobUrl } from '../utils';
+import DocumentViewerModal from './DocumentViewerModal';
 
 const OfferUploadModal = ({ applicationId, onClose }) => {
   const [file, setFile] = useState(null);
@@ -15,6 +16,70 @@ const OfferUploadModal = ({ applicationId, onClose }) => {
       return data;
     },
   });
+
+  const [viewerState, setViewerState] = useState({
+    isOpen: false,
+    isLoading: false,
+    fileUrl: '',
+    error: '',
+    title: 'Offer Letter',
+  });
+
+  useEffect(() => {
+    return () => {
+      cleanupBlobUrl(viewerState.fileUrl);
+    };
+  }, [viewerState.fileUrl]);
+
+  const closeViewer = () => {
+    setViewerState((prev) => {
+      cleanupBlobUrl(prev.fileUrl);
+      return {
+        isOpen: false,
+        isLoading: false,
+        fileUrl: '',
+        error: '',
+        title: 'Offer Letter',
+      };
+    });
+  };
+
+  const openDocumentViewer = async (sourceUrl, title = 'Offer Letter') => {
+    if (!sourceUrl) {
+      toast.error('Document URL is missing');
+      return;
+    }
+
+    setViewerState({
+      isOpen: true,
+      isLoading: true,
+      fileUrl: '',
+      error: '',
+      title,
+    });
+
+    try {
+      const localUrl = await fetchDocumentBlobUrl(sourceUrl);
+      setViewerState((prev) => {
+        cleanupBlobUrl(prev.fileUrl);
+        return {
+          ...prev,
+          isLoading: false,
+          fileUrl: localUrl,
+        };
+      });
+    } catch (error) {
+      const message = `Unable to open document. ${error?.response?.status
+          ? `Status ${error.response.status}`
+          : error?.message || 'Please try again.'
+        }`;
+      setViewerState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: message,
+      }));
+    }
+  };
 
   const uploadMutation = useMutation({
     mutationFn: async (formData) => {
@@ -93,14 +158,13 @@ const OfferUploadModal = ({ applicationId, onClose }) => {
                       <p className="text-emerald-400 text-xs font-black uppercase tracking-widest">
                         Already Uploaded
                       </p>
-                      <a
-                        href={offer.offerLetter}
-                        target="_blank"
-                        rel="noopener"
-                        className="text-indigo-400 hover:text-indigo-300 text-[10px] font-bold underline mt-1 block transition-colors"
+                      <button
+                        type="button"
+                        onClick={() => openDocumentViewer(offer.offerLetter, 'Current Offer Letter')}
+                        className="text-indigo-400 hover:text-indigo-300 text-[10px] font-bold underline mt-1 block transition-colors text-left"
                       >
                         View Current Document
-                      </a>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -176,6 +240,15 @@ const OfferUploadModal = ({ applicationId, onClose }) => {
           </div>
         )}
       </div>
+      {/* Standardized Document Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={viewerState.isOpen}
+        isLoading={viewerState.isLoading}
+        fileUrl={viewerState.fileUrl}
+        error={viewerState.error}
+        title={viewerState.title}
+        onClose={closeViewer}
+      />
     </div>
   );
 };
