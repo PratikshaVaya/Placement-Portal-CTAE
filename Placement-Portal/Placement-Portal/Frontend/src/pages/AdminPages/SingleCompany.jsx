@@ -54,13 +54,13 @@ const SingleCompany = () => {
               className="relative w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-slate-900 shadow-2xl"
             />
           </div>
-          
+
           <div className="flex-1 flex flex-col gap-4 text-center md:text-left">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">{name}</h1>
               <div className="h-1 w-20 bg-indigo-500 rounded-full mt-2 mx-auto md:mx-0 shadow-[0_0_10px_rgba(99,102,241,0.6)]"></div>
             </div>
-            
+
             <div className="space-y-2">
               <span className="text-sm font-semibold uppercase tracking-wider text-slate-500">About the Company</span>
               <p className="text-slate-300 text-lg leading-relaxed">{about}</p>
@@ -90,22 +90,20 @@ const SingleCompany = () => {
         <div className="flex gap-4 border-b border-white/10 pb-4">
           <button
             type="button"
-            className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-              activeSection === 'jobs' 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
+            className={`px-6 py-2 rounded-lg font-semibold transition-all ${activeSection === 'jobs'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
+              }`}
             onClick={() => setActiveSection('jobs')}
           >
             Jobs Posted
           </button>
           <button
             type="button"
-            className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-              activeSection === 'hired' 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' 
+            className={`px-6 py-2 rounded-lg font-semibold transition-all ${activeSection === 'hired'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
+              }`}
             onClick={() => setActiveSection('hired')}
           >
             Candidates Hired
@@ -184,13 +182,12 @@ const SingleCompany = () => {
                           {typeof student.package === 'number' ? `${student.package} LPA` : 'N/A'}
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                            student.status === 'OFFER_ACCEPTED' || student.status === 'HIRED' 
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                              : student.status === 'OFFER_REJECTED' 
-                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' 
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${student.status === 'OFFER_ACCEPTED' || student.status === 'HIRED'
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                              : student.status === 'OFFER_REJECTED'
+                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                                 : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                          }`}>
+                            }`}>
                             {student.status?.replace('_', ' ') || 'PLACED'}
                           </span>
                         </td>
