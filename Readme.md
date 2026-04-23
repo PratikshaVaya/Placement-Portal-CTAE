@@ -7,7 +7,9 @@ A premium, state-of-the-art Campus Placement Management System designed for **CT
 ![Security](https://img.shields.io/badge/Auth-JWT--Secure-emerald?style=for-the-badge)
 
 ---
+## 🎥 Project Demo
 
+[![Watch Demo](https://img.youtube.com/vi/d2XlC6vhExE/0.jpg)](https://youtu.be/d2XlC6vhExE)
 ## 🚀 Key Features
 
 ### 👨‍🎓 For Students
