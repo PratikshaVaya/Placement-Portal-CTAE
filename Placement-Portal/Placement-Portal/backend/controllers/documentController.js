@@ -4,6 +4,8 @@ const CustomAPIError = require('../errors');
 const JobApplicationModel = require('../models/JobApplication');
 const NoticeModel = require('../models/Notice');
 const UserModel = require('../models/User');
+const PlacementDataModel = require('../models/student/PlacementData');
+
 
 const isDocProxyDebugEnabled =
   process.env.DOCUMENT_PROXY_DEBUG === 'true' ||
@@ -268,7 +270,42 @@ const viewDocument = async (req, res) => {
       }
     }
 
+    // Check if it's a placement document (offer letter or joining letter)
     if (!isAuthorized) {
+      let placement = await PlacementDataModel.findOne({
+        $or: [{ offerLetter: url }, { joiningLetter: url }]
+      });
+
+      if (!placement && requestedAssetId) {
+        const candidatePlacements = await PlacementDataModel.find({
+          $or: [
+            { offerLetter: { $exists: true, $ne: null } },
+            { joiningLetter: { $exists: true, $ne: null } },
+          ],
+        }).select('offerLetter joiningLetter studentId');
+
+        placement = candidatePlacements.find((p) => {
+          const offerId = extractAssetId(p.offerLetter || '', process.env.CLOUD_NAME);
+          const joiningId = extractAssetId(p.joiningLetter || '', process.env.CLOUD_NAME);
+
+          const matchesOffer = offerId && (offerId.withExt === requestedAssetId.withExt || offerId.withoutExt === requestedAssetId.withoutExt);
+          const matchesJoining = joiningId && (joiningId.withExt === requestedAssetId.withExt || joiningId.withoutExt === requestedAssetId.withoutExt);
+
+          return matchesOffer || matchesJoining;
+        });
+      }
+
+      if (placement) {
+        // Only the student who owns the placement record or an admin can see it
+        if (placement.studentId.toString() === userId) {
+          isAuthorized = true;
+          debugLog('Authorized via own placement document', { placementId: placement._id });
+        }
+      }
+    }
+
+    if (!isAuthorized) {
+
       debugLog('Authorization denied', {
         userId,
         role,

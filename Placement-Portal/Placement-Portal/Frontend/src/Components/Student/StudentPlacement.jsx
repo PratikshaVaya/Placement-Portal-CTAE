@@ -5,9 +5,11 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 
-import { customFetch, fetchStudentPlacements, getFileUrl } from '../../utils';
+import { customFetch, fetchStudentPlacements, getFileUrl, fetchDocumentBlobUrl, cleanupBlobUrl } from '../../utils';
 import { setPlacements } from '../../features/studentProfile/studentProfileSlice';
 import PlacementModal from './PlacementModal';
+import DocumentViewerModal from '../DocumentViewerModal';
+import { useEffect } from 'react';
 
 const StudentPlacement = () => {
   const { placements, type } = useSelector(
@@ -26,6 +28,70 @@ const StudentPlacement = () => {
     action: 'create',
     onCampus: false,
   });
+
+  const [viewerState, setViewerState] = useState({
+    isOpen: false,
+    isLoading: false,
+    fileUrl: '',
+    error: '',
+    title: 'Document',
+  });
+
+  useEffect(() => {
+    return () => {
+      cleanupBlobUrl(viewerState.fileUrl);
+    };
+  }, [viewerState.fileUrl]);
+
+  const closeViewer = () => {
+    setViewerState((prev) => {
+      cleanupBlobUrl(prev.fileUrl);
+      return {
+        isOpen: false,
+        isLoading: false,
+        fileUrl: '',
+        error: '',
+        title: 'Document',
+      };
+    });
+  };
+
+  const openDocumentViewer = async (sourceUrl, title = 'Document') => {
+    if (!sourceUrl) {
+      toast.error('Document URL is missing');
+      return;
+    }
+
+    setViewerState({
+      isOpen: true,
+      isLoading: true,
+      fileUrl: '',
+      error: '',
+      title,
+    });
+
+    try {
+      const localUrl = await fetchDocumentBlobUrl(sourceUrl);
+      setViewerState((prev) => {
+        cleanupBlobUrl(prev.fileUrl);
+        return {
+          ...prev,
+          isLoading: false,
+          fileUrl: localUrl,
+        };
+      });
+    } catch (error) {
+      const message = `Unable to open document. ${error?.response?.status
+          ? `Status ${error.response.status}`
+          : error?.message || 'Please try again.'
+        }`;
+      setViewerState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: message,
+      }));
+    }
+  };
 
   // Extract hiring events from applications
   const portalPlacements = (applicationsData?.applications || []).reduce((acc, curr) => {
@@ -53,6 +119,14 @@ const StudentPlacement = () => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom duration-700">
       <PlacementModal modalData={modalData} />
+      <DocumentViewerModal
+        isOpen={viewerState.isOpen}
+        isLoading={viewerState.isLoading}
+        fileUrl={viewerState.fileUrl}
+        error={viewerState.error}
+        title={viewerState.title}
+        onClose={closeViewer}
+      />
 
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
         <div className="flex items-center gap-4">
@@ -82,7 +156,7 @@ const StudentPlacement = () => {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {/* Portal Placements (Automatic) */}
           {portalPlacements.map((app) => (
-            <div key={app._id} className="group rounded-[2.5rem] bg-slate-900/60 backdrop-blur-xl border border-indigo-500/30 p-8 hover:bg-slate-800/60 transition-all duration-500 shadow-2xl relative overflow-hidden ring-1 ring-white/5">
+            <div key={app._id} className="group rounded-[2.5rem] bg-slate-900/60 backdrop-blur-md border border-indigo-500/30 p-8 hover:bg-slate-800/60 transition-all duration-300 shadow-2xl relative overflow-hidden ring-1 ring-white/5 smooth-gpu">
               <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-[80px] -mr-24 -mt-24 group-hover:bg-indigo-500/15 transition-colors"></div>
               
               <div className="flex justify-between items-start gap-4 mb-6 relative z-10">
@@ -144,16 +218,16 @@ const StudentPlacement = () => {
                 </div>
 
                 {app.offerLetter && (
-                  <a 
-                    href={app.offerLetter} 
-                    target="_blank" 
+                  <button 
+                    type="button"
+                    onClick={() => openDocumentViewer(app.offerLetter, 'Offer Letter')}
                     className="w-full py-4 px-4 rounded-2xl bg-white/5 border border-white/10 text-center text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-500 transition-all block mt-4 group/btn"
                   >
                     <span className="flex items-center justify-center gap-2">
                       View Offer Letter
                       <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
                     </span>
-                  </a>
+                  </button>
                 )}
               </div>
               
@@ -170,6 +244,7 @@ const StudentPlacement = () => {
                 key={placement._id}
                 placement={placement}
                 setModalData={setModalData}
+                openDocumentViewer={openDocumentViewer}
                 type={type}
               />
             ))
@@ -185,7 +260,7 @@ const StudentPlacement = () => {
   );
 };
 
-const PlacementContainer = ({ placement, setModalData, type }) => {
+const PlacementContainer = ({ placement, setModalData, openDocumentViewer, type }) => {
   const {
     jobProfile,
     company,
@@ -203,7 +278,7 @@ const PlacementContainer = ({ placement, setModalData, type }) => {
   if (joiningDate) joiningDate = new Date(joiningDate).toLocaleDateString();
 
   return (
-    <div className="group rounded-[2.5rem] bg-slate-900/40 backdrop-blur-xl border border-white/10 p-8 hover:bg-slate-800/60 transition-all duration-500 shadow-2xl relative overflow-hidden">
+    <div className="group rounded-[2.5rem] bg-slate-900/40 backdrop-blur-md border border-white/10 p-8 hover:bg-slate-800/60 transition-all duration-300 shadow-2xl relative overflow-hidden smooth-gpu">
       <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/5 rounded-full blur-[80px] -mr-24 -mt-24 group-hover:bg-purple-500/10 transition-colors"></div>
       
       <div className="flex justify-between items-start gap-4 mb-6 relative z-10">
@@ -272,24 +347,22 @@ const PlacementContainer = ({ placement, setModalData, type }) => {
         
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           {offerLetter && (
-            <a 
-              href={getFileUrl(offerLetter)} 
-              target="_blank" 
-              rel="noopener"
+            <button 
+              type="button"
+              onClick={() => openDocumentViewer(offerLetter, 'Offer Letter')}
               className="flex-1 py-3 px-4 rounded-xl bg-indigo-600/10 border border-indigo-500/30 text-center text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all"
             >
               Offer Letter
-            </a>
+            </button>
           )}
           {joiningLetter && (
-            <a 
-              href={getFileUrl(joiningLetter)} 
-              target="_blank" 
-              rel="noopener"
+            <button 
+              type="button"
+              onClick={() => openDocumentViewer(joiningLetter, 'Joining Letter')}
               className="flex-1 py-3 px-4 rounded-xl bg-purple-600/10 border border-purple-500/30 text-center text-[10px] font-black uppercase tracking-widest text-purple-400 hover:bg-purple-600 hover:text-white transition-all"
             >
               Joining Letter
-            </a>
+            </button>
           )}
         </div>
       </div>
