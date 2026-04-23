@@ -591,14 +591,26 @@ const getCompanyDashboardStats = async (req, res) => {
     return acc;
   }, {});
 
+  const jobStatsRaw = await JobOpeningModel.aggregate([
+    { $match: { 'company.id': new mongoose.Types.ObjectId(companyId) } },
+    {
+      $group: {
+        _id: null,
+        totalShortlisted: { $sum: { $size: { $ifNull: ['$shortlistedCandidates', []] } } },
+      }
+    }
+  ]);
+
+  const totalShortlistedCount = jobStatsRaw[0]?.totalShortlisted || 0;
+
   // Map for frontend consistency
   const stats = {
     totalJobs,
     openJobs,
     totalApplied: statusCountsRaw.reduce((sum, curr) => sum + curr.count, 0),
-    totalHired: (counts['HIRED'] || 0) + (counts['OFFER_ACCEPTED'] || 0),
-    totalShortlisted: counts['SHORTLISTED'] || 0,
-    totalRejected: (counts['REJECTED'] || 0) + (counts['OFFER_REJECTED'] || 0),
+    totalHired: (counts['HIRED'] || 0) + (counts['OFFER_ACCEPTED'] || 0) + (counts['OFFER_SENT'] || 0) + (counts['OFFER_REJECTED'] || 0),
+    totalShortlisted: totalShortlistedCount,
+    totalRejected: (counts['REJECTED'] || 0),
     totalOfferSent: (counts['OFFER_SENT'] || 0) + (counts['OFFER_ACCEPTED'] || 0) + (counts['OFFER_REJECTED'] || 0),
     statusCounts: counts
   };

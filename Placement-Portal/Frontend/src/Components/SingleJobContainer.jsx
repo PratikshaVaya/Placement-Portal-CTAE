@@ -211,45 +211,61 @@ const SingleJob = ({ job, status, role }) => {
           </Link>
 
           {role == 'student' && (
-            status == 'applied' ? (
-              <button className="flex-1 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-bold text-xs cursor-default">Applied</button>
-            ) : status == 'hired' ? (
-              <button className="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-bold text-xs cursor-default shadow-lg shadow-emerald-500/20">Hired</button>
-            ) : status == 'rejected' ? (
-              <button className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-xs cursor-default">Rejected</button>
-            ) : status == 'shortlisted' ? (
-              <button className="flex-1 py-3 rounded-xl bg-orange-500 text-white font-bold text-xs cursor-default shadow-lg shadow-orange-500/20">Shortlisted</button>
-            ) : (['OFFER_ACCEPTED', 'OFFER_REJECTED'].includes(hiredStatus)) ? (
-              <button className="flex-1 py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-[10px] cursor-not-allowed opacity-50" disabled>
-                Offer Finalized
-              </button>
-            ) : isNotEligible ? (
-              <button className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-bold text-[10px] cursor-not-allowed opacity-50" disabled>
-                Ineligible
-              </button>
-            ) : isExpired ? (
-              <button className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-bold text-[10px] cursor-not-allowed opacity-50" disabled>
-                Expired
-              </button>
-            ) : (
-              <button
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs transition-all active:scale-95 shadow-lg shadow-indigo-500/25"
-                onClick={() => {
-                  dispatch(
-                    setJobApply({
-                      jobApply: {
-                        jobId: _id,
-                        profile,
-                        company: company.name,
-                      },
-                    })
-                  );
-                  document.getElementById('jobApplicationModal').showModal();
-                }}
-              >
-                Apply Now
-              </button>
-            )
+            (() => {
+              const effectiveStatus = job.applicationStatus ? job.applicationStatus.toLowerCase() : status;
+              if (effectiveStatus === 'applied') {
+                return <button className="flex-1 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-bold text-xs cursor-default">Applied</button>;
+              }
+              if (effectiveStatus === 'shortlisted') {
+                return <button className="flex-1 py-3 rounded-xl bg-orange-500 text-white font-bold text-xs cursor-default shadow-lg shadow-orange-500/20">Shortlisted</button>;
+              }
+              if (effectiveStatus === 'hired') {
+                return <button className="flex-1 py-3 rounded-xl bg-emerald-500 text-white font-bold text-xs cursor-default shadow-lg shadow-emerald-500/20">Hired</button>;
+              }
+              if (effectiveStatus === 'rejected') {
+                return <button className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-xs cursor-default">Rejected</button>;
+              }
+              if (['OFFER_ACCEPTED', 'OFFER_REJECTED'].includes(hiredStatus)) {
+                return (
+                  <button className="flex-1 py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-[10px] cursor-not-allowed opacity-50" disabled>
+                    Offer Finalized
+                  </button>
+                );
+              }
+              if (isNotEligible) {
+                return (
+                  <button className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-bold text-[10px] cursor-not-allowed opacity-50" disabled>
+                    Ineligible
+                  </button>
+                );
+              }
+              if (isExpired) {
+                return (
+                  <button className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-bold text-[10px] cursor-not-allowed opacity-50" disabled>
+                    Expired
+                  </button>
+                );
+              }
+              return (
+                <button
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs transition-all active:scale-95 shadow-lg shadow-indigo-500/25"
+                  onClick={() => {
+                    dispatch(
+                      setJobApply({
+                        jobApply: {
+                          jobId: _id,
+                          profile,
+                          company: company.name,
+                        },
+                      })
+                    );
+                    document.getElementById('jobApplicationModal').showModal();
+                  }}
+                >
+                  Apply Now
+                </button>
+              );
+            })()
           )}
         </div>
       </div>

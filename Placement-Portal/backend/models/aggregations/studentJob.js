@@ -68,6 +68,7 @@ function studentJobsByStatusAgg({ userId, status }) {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     return [{ $match: { _id: null } }];
   }
+  const userObjId = new mongoose.Types.ObjectId(userId);
   const jobInclude = { _id: 0 };
   const jobExclude = {};
   let jobPath;
@@ -112,6 +113,30 @@ function studentJobsByStatusAgg({ userId, status }) {
         foreignField: '_id',
         as: 'jobs',
         pipeline: [
+          {
+            $addFields: {
+              applicationStatus: {
+                $switch: {
+                  branches: [
+                    {
+                      case: { $in: [userObjId, { $ifNull: ['$selectedCandidates', []] }] },
+                      then: 'HIRED',
+                    },
+                    {
+                      case: { $in: [userObjId, { $ifNull: ['$rejectedCandidates', []] }] },
+                      then: 'REJECTED',
+                    },
+                    {
+                      case: { $in: [userObjId, { $ifNull: ['$shortlistedCandidates', []] }] },
+                      then: 'SHORTLISTED',
+                    },
+                    { case: { $in: [userObjId, { $ifNull: ['$applicants', []] }] }, then: 'APPLIED' },
+                  ],
+                  default: 'NOT_APPLIED',
+                },
+              },
+            },
+          },
           {
             $project: {
               receivingCourse: 0,
@@ -195,19 +220,19 @@ function singleJobStudentAgg({
         applicationStatus: {
           $switch: {
             branches: [
-              { case: { $in: [userId, { $ifNull: ['$applicants', []] }] }, then: 'APPLIED' },
               {
-                case: { $in: [userId, { $ifNull: ['$shortlistedCandidates', []] }] },
-                then: 'SHORTLISTED',
+                case: { $in: [userId, { $ifNull: ['$selectedCandidates', []] }] },
+                then: 'HIRED',
               },
               {
                 case: { $in: [userId, { $ifNull: ['$rejectedCandidates', []] }] },
                 then: 'REJECTED',
               },
               {
-                case: { $in: [userId, { $ifNull: ['$selectedCandidates', []] }] },
-                then: 'HIRED',
+                case: { $in: [userId, { $ifNull: ['$shortlistedCandidates', []] }] },
+                then: 'SHORTLISTED',
               },
+              { case: { $in: [userId, { $ifNull: ['$applicants', []] }] }, then: 'APPLIED' },
             ],
             default: 'NOT_APPLIED',
           },
