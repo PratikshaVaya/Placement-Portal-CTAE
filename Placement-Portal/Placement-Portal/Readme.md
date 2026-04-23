@@ -1,173 +1,127 @@
-# 🚀 Placement Portal
+# 🎓 Placement Portal - CTAE
 
-A full-stack campus placement management system that connects **students, recruiters, and administrators** in a unified platform.
+A premium, state-of-the-art Campus Placement Management System designed for **CTAE**. This platform streamlines the recruitment lifecycle by connecting students, recruiters, and administrators through a unified, high-performance web interface.
 
-It streamlines the entire placement process — from job posting and applications to hiring and analytics — making it efficient, transparent, and scalable.
-
----
-
-## 📌 Overview
-
-This platform enables:
-
-- 🎓 Students to build profiles, upload resumes, and apply for jobs  
-- 🏢 Recruiters to post jobs and manage candidates  
-- 🛠️ Admins to oversee placements, analytics, and announcements  
+![Aesthetics](https://img.shields.io/badge/UI-Glassmorphism-blueviolet?style=for-the-badge)
+![Tech](https://img.shields.io/badge/Stack-MERN--Docker-blue?style=for-the-badge)
+![Security](https://img.shields.io/badge/Auth-JWT--Secure-emerald?style=for-the-badge)
 
 ---
 
-## ✨ Features
+## 🚀 Key Features
 
-### 🎓 Student Portal
-- Profile creation and management  
-- Resume builder & upload  
-- Apply for jobs  
-- Track application status  
-- Offer accept/reject system  
-- View announcements  
+### 👨‍🎓 For Students
+- **Smart Job Matching**: AI-driven skill compatibility scores for every job listing.
+- **AI Resume Analyzer**: Instant feedback on resume quality and keyword matching.
+- **Professional Resume Builder**: Create high-quality, standardized resumes directly within the portal.
+- **Automated Eligibility**: The system automatically checks if you meet a recruiter's academic criteria (CGPA, 10th/12th%, Backlogs).
+- **Placement Tracking**: Manage both On-Campus and Off-Campus placement records in a unified dashboard.
+- **Targeted Announcements**: Receive real-time notices specifically filtered for your course and batch.
+- **Secure Document Viewer**: View uploaded resumes and offer letters securely via blob-based rendering.
 
-### 🏢 Recruiter Portal
-- Company profile management  
-- Job posting with eligibility criteria  
-- View applicants  
-- Shortlist, reject, and hire candidates  
-- Offer management system  
+### 🏢 For Recruiters
+- **Job Lifecycle Management**: Create, edit, and reopen jobs. Expired jobs are automatically handled.
+- **Advanced Filtering**: Filter candidates by academic performance, skills, and department.
+- **Application Workflow**: Shortlist, hire, or reject candidates with real-time status updates.
+- **Smart Ranking**: AI-powered ranking of candidates based on job description fit.
+- **Candidate Profiles**: Access detailed public student profiles, including their academic history and portfolios.
 
-### 🛠️ Admin Dashboard
-- Manage students and recruiters  
-- View placement analytics  
-- Broadcast announcements (branch & batch-wise)  
-- Track company hiring activity  
-- Block/unblock users  
-
----
-
-## 🧱 Tech Stack
-
-| Layer     | Technology Used        |
-|----------|----------------------|
-| Frontend | React (Vite)         |
-| Backend  | Node.js, Express     |
-| Database | MongoDB Atlas        |
-| Storage  | Cloudinary           |
-| Auth     | JWT Authentication   |
+### 🛡️ For Administrators
+- **Real-time Analytics**: Department-wise placement stats, average/highest package tracking, and hiring trends.
+- **Bulk Data Management**: Import hundreds of students via CSV with automatic validation; Export student data for offline records.
+- **Targeted Announcement System**: Create and broadcast notices with file attachments to specific Courses, Batches, or Departments.
+- **Unique Counting**: Advanced aggregation logic ensures students are never double-counted in placement stats.
+- **Admin Settings**: Globally toggle security features like DOB-based passwords and "Force Password Reset" for new batches.
+- **Placement Enforcement**: Strict backend rules ensure students cannot apply for multiple on-campus jobs after receiving an offer.
 
 ---
 
-## 📁 Project Structure
+## 🛠️ Tech Stack
+
+- **Frontend**: React.js (Vite), TailwindCSS, DaisyUI (Glassmorphism design).
+- **Backend**: Node.js, Express.js.
+- **Database**: MongoDB Atlas (NoSQL).
+- **State Management**: Redux Toolkit & React Query.
+- **Authentication**: JWT (JSON Web Tokens) with HTTP-only cookies.
+- **Storage**: Cloudinary (Resumes, Profile Photos, Offer Letters).
+- **Deployment**: Docker & Docker-Compose (Nginx for SPA routing).
+
+---
+
+## 📂 Project Structure
+
+```bash
 Placement-Portal/
-├── Frontend/ # React frontend
-├── backend/ # Node.js backend APIs
-└── README.md
+├── Frontend/           # React application (Vite)
+│   ├── src/
+│   │   ├── Components/ # Reusable UI elements (Modals, Cards, Tables)
+│   │   ├── pages/      # Route-based page components
+│   │   ├── store/      # Redux state configuration
+│   │   └── utils/      # API helpers and formatting logic
+│   └── Dockerfile      # Multi-stage Nginx build
+├── backend/            # Express.js API
+│   ├── controllers/    # Business logic (Bulk Import, AI Analysis, Analytics)
+│   ├── models/         # Mongoose schemas (User, Job, Notice, Course)
+│   ├── routes/         # API endpoint definitions
+│   └── utils/          # Middleware and utilities
+└── docker-compose.yml  # Orchestrates full stack deployment
+```
 
 ---
 
-## ⚙️ Prerequisites
+## ⚙️ Local Setup Guide
 
-- Node.js (v16 or above)  
-- npm  
-- Git  
-- MongoDB Atlas account  
-- Cloudinary account  
+Follow these steps to run the portal on your local machine:
 
----
+### 1. Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
+- [Node.js](https://nodejs.org/) (Optional, for local development without Docker).
 
-## 🔑 Environment Variables
-
-Create a `.env` file inside the `backend/` folder:
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
+### 2. Environment Configuration
+Create a `.env` file in the **backend** directory:
+```env
+MONGO_URI=your_mongodb_atlas_uri
 JWT_SECRET=your_secret_key
-
+JWT_LIFETIME=1d
 CLOUD_NAME=your_cloudinary_name
-CLOUD_API_KEY=your_api_key
-CLOUD_API_SECRET=your_api_secret
+CLOUD_API_KEY=your_cloudinary_key
+CLOUD_API_SECRET=your_cloudinary_secret
+```
 
+Create a `.env` file in the **root** directory (for Docker):
+```env
+VITE_API_URL=http://localhost:5000/api/v1
+```
 
----
+### 3. Run with Docker (Recommended)
+From the root directory, run:
+```powershell
+docker-compose up --build
+```
+The application will be available at:
+- **Frontend**: `http://localhost:5173`
+- **Backend API**: `http://localhost:5000/api/v1`
 
-## 🖥️ Local Setup & Installation
-
-### 1️⃣ Clone the Repository
-git clone https://github.com/PratikshaVaya/Placement-Portal.git
-
-cd Placement-Portal
-
-
----
-
-### 2️⃣ Backend Setup
-
-
-cd backend
-npm install
-npm run dev
-
+### 4. Default Admin Credentials
+*Contact the development team for the initial administrator login credentials to access the analytics and management dashboards.*
 
 ---
 
-### 3️⃣ Frontend Setup
-
-Open a new terminal:
-
-
-cd Frontend
-npm install
-npm run dev
-
+## 🔒 Security & Optimization
+- **SPA Routing**: Configured via Nginx `try_files` to prevent 404s on page refresh.
+- **Data Integrity**: Automated sync utilities ensure that legacy data matches new placement tracking schemas.
+- **Constraint Enforcement**: API-level validation prevents "Double Counting" and "Multiple On-Campus Offer" violations.
 
 ---
 
-## 🌐 Run the Application
-
-- Frontend: http://localhost:5173  
-- Backend: http://localhost:5000  
-
----
-
-## 🔐 User Roles
-
-- Student  
-- Recruiter  
-- Admin  
+## 🤝 Contributing
+1. Fork the Project.
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the Branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
 
 ---
 
-## ⚠️ Important Notes
-
-- Run frontend and backend simultaneously  
-- Do NOT upload `.env` or `node_modules`  
-- Ensure MongoDB & Cloudinary are configured  
-
----
-
-## 🧪 Common Issues
-
-### Backend not starting
-- Check MongoDB URI  
-- Verify `.env` file  
-
-### Image upload not working
-- Check Cloudinary credentials  
-
-### Frontend not connecting
-- Ensure backend is running  
-
----
-
-## 🚀 Future Enhancements
-
-- AI-based resume scoring  
-- Email notifications  
-- Placement analytics improvements  
-
----
-
-## 👩‍💻 Author
-
-**Pratiksha Vaya**  
-https://github.com/PratikshaVaya  
-
----
-
-⭐ If you like this project, give it a star!
+**Developed for the CTAE Placement Cell.**
+**By Pratiksha Vaya**
