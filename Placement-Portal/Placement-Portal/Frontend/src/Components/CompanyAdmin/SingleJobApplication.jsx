@@ -1,12 +1,17 @@
 import { Link } from 'react-router-dom';
-import { customFetch, getFileUrl } from '../../utils';
+import {
+  cleanupBlobUrl,
+  customFetch,
+  fetchDocumentBlobUrl,
+} from '../../utils';
 import { toast } from 'react-toastify';
 import { FiExternalLink, FiSend, FiUpload } from 'react-icons/fi';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
 import OfferUploadModal from '../OfferUploadModal';
 import ApplicationFilterPanel from './ApplicationFilterPanel';
+import DocumentViewerModal from '../DocumentViewerModal';
 
 const SingleJobApplication = ({
   jobId,
@@ -72,7 +77,7 @@ const SingleJobApplication = ({
       queryClient.invalidateQueries({ queryKey: ['single-job-applications'] });
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
     } catch (error) {
-       toast.error(error?.response?.data?.message || 'Bulk action failed');
+      toast.error(error?.response?.data?.message || 'Bulk action failed');
     }
   }
 
@@ -89,17 +94,17 @@ const SingleJobApplication = ({
   const calculateMatchScore = (app) => {
     const studentSkills = (app.applicantSkills || []).map(s => s.toLowerCase().trim());
     const jobSkills = (keySkills || []).map(s => s.toLowerCase().trim());
-    
+
     let skillScore = 0;
     if (jobSkills.length > 0) {
-      const matchedSkills = jobSkills.filter(skill => 
+      const matchedSkills = jobSkills.filter(skill =>
         studentSkills.some(s => s.includes(skill) || skill.includes(s))
       );
       skillScore = matchedSkills.length / jobSkills.length;
     }
 
     const cgpa = app.applicantCGPA || 0;
-    const matchScore = (skillScore * 0.5) + (cgpa / 10 * 0.3) + (0.2); 
+    const matchScore = (skillScore * 0.5) + (cgpa / 10 * 0.3) + (0.2);
     return Math.round(matchScore * 100);
   };
 
@@ -108,8 +113,8 @@ const SingleJobApplication = ({
     if (!applications || !currentFilters) return applications;
 
     let filtered = applications.map(app => ({
-        ...app,
-        matchScore: calculateMatchScore(app)
+      ...app,
+      matchScore: calculateMatchScore(app)
     }));
 
     filtered = filtered.filter((app) => {
@@ -153,8 +158,8 @@ const SingleJobApplication = ({
 
     // Sort result
     if (currentFilters.isSmartFilter && jobType === 'pending') {
-        filtered.sort((a, b) => b.matchScore - a.matchScore);
-        return filtered.slice(0, 10);
+      filtered.sort((a, b) => b.matchScore - a.matchScore);
+      return filtered.slice(0, 10);
     }
 
     if (currentFilters.sortBy) {
@@ -178,7 +183,7 @@ const SingleJobApplication = ({
 
   // Dynamic branches from course options
   const dynamicBranches = Array.from(new Set(
-    Object.values(courseOptions).flatMap(course => 
+    Object.values(courseOptions).flatMap(course =>
       course.departments?.map(d => d.departmentName) || []
     )
   )).sort();
@@ -187,94 +192,94 @@ const SingleJobApplication = ({
 
   return (
     <>
-    <div className="flex flex-col gap-y-6 animate-in fade-in duration-500">
-      <div className="bg-slate-900/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 transition-all duration-500 group-hover:bg-indigo-500/10"></div>
-        
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-6 relative z-10">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-               <div className="w-1.5 h-6 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
-               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Managing Applications For</span>
+      <div className="flex flex-col gap-y-6 animate-in fade-in duration-500">
+        <div className="bg-slate-900/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-16 -mt-16 transition-all duration-500 group-hover:bg-indigo-500/10"></div>
+
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-6 relative z-10">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-1.5 h-6 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Managing Applications For</span>
+              </div>
+              <Link
+                to={`/company-dashboard/jobs/${jobId}`}
+                className="text-3xl font-black text-white tracking-tight hover:text-indigo-400 transition-colors flex items-center gap-3"
+              >
+                {profile} <FiExternalLink className="text-xl opacity-50" />
+              </Link>
             </div>
-            <Link
-              to={`/company-dashboard/jobs/${jobId}`}
-              className="text-3xl font-black text-white tracking-tight hover:text-indigo-400 transition-colors flex items-center gap-3"
-            >
-              {profile} <FiExternalLink className="text-xl opacity-50" />
-            </Link>
-          </div>
-          
-          <div className="flex flex-wrap gap-4">
-            <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/5 flex flex-col">
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Deadline</span>
-              <span className="text-slate-200 text-sm font-bold">{new Date(deadline).toLocaleDateString()}</span>
-            </div>
-            <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/5 flex flex-col">
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Openings</span>
-              <span className="text-slate-200 text-sm font-bold">{openingsCount} Positions</span>
+
+            <div className="flex flex-wrap gap-4">
+              <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/5 flex flex-col">
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Deadline</span>
+                <span className="text-slate-200 text-sm font-bold">{new Date(deadline).toLocaleDateString()}</span>
+              </div>
+              <div className="px-4 py-2 rounded-2xl bg-white/5 border border-white/5 flex flex-col">
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Openings</span>
+                <span className="text-slate-200 text-sm font-bold">{openingsCount} Positions</span>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Filter Panel */}
+        <ApplicationFilterPanel
+          onFiltersChange={setFilters}
+          branches={allBranches}
+        />
+
+        <div role="tablist" className="tabs tabs-lifted bg-slate-900/20 p-2 rounded-[2rem] border border-white/5 backdrop-blur-md">
+          <TabContent
+            jobId={jobId}
+            jobType="pending"
+            label="APPLIED"
+            arr={applyClientFilters(pending, filters, 'pending')}
+            originalLength={pending.length}
+            onAction={handleAction}
+            onBulkAction={handleBulkAction}
+            isSmart={!!filters.isSmartFilter}
+          />
+          <TabContent
+            jobId={jobId}
+            jobType="shortlisted"
+            label="SHORTLISTED"
+            arr={applyClientFilters(shortlisted, filters, 'shortlisted')}
+            originalLength={shortlisted.length}
+            onAction={handleAction}
+          />
+          <TabContent
+            jobId={jobId}
+            jobType="hired"
+            label="HIRED / OFFERS"
+            arr={applyClientFilters(hired, filters, 'hired')}
+            originalLength={hired.length}
+            onAction={handleAction}
+            onSendOffer={handleSendOffer}
+          />
+          <TabContent
+            jobId={jobId}
+            jobType="rejected"
+            label="REJECTED"
+            arr={applyClientFilters(rejected, filters, 'rejected')}
+            originalLength={rejected.length}
+            onAction={handleAction}
+          />
+        </div>
+
       </div>
 
-      {/* Filter Panel */}
-      <ApplicationFilterPanel
-        onFiltersChange={setFilters}
-        branches={allBranches}
-      />
-
-      <div role="tablist" className="tabs tabs-lifted bg-slate-900/20 p-2 rounded-[2rem] border border-white/5 backdrop-blur-md">
-        <TabContent
-          jobId={jobId}
-          jobType="pending"
-          label="APPLIED"
-          arr={applyClientFilters(pending, filters, 'pending')}
-          originalLength={pending.length}
-          onAction={handleAction}
-          onBulkAction={handleBulkAction}
-          isSmart={!!filters.isSmartFilter}
-        />
-        <TabContent
-          jobId={jobId}
-          jobType="shortlisted"
-          label="SHORTLISTED"
-          arr={applyClientFilters(shortlisted, filters, 'shortlisted')}
-          originalLength={shortlisted.length}
-          onAction={handleAction}
-        />
-        <TabContent
-          jobId={jobId}
-          jobType="hired"
-          label="HIRED / OFFERS"
-          arr={applyClientFilters(hired, filters, 'hired')}
-          originalLength={hired.length}
-          onAction={handleAction}
-          onSendOffer={handleSendOffer}
-        />
-        <TabContent
-          jobId={jobId}
-          jobType="rejected"
-          label="REJECTED"
-          arr={applyClientFilters(rejected, filters, 'rejected')}
-          originalLength={rejected.length}
-          onAction={handleAction}
-        />
-      </div>
-
-    </div>
-    
-    {/* Section Divider */}
-    <div className="my-16 relative">
-      <div className="absolute inset-0 flex items-center" aria-hidden="true">
-        <div className="w-full border-t border-white/5"></div>
-      </div>
-      <div className="relative flex justify-center">
-        <div className="bg-slate-900 px-4">
-           <div className="w-2 h-2 rounded-full bg-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+      {/* Section Divider */}
+      <div className="my-16 relative">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div className="w-full border-t border-white/5"></div>
+        </div>
+        <div className="relative flex justify-center">
+          <div className="bg-slate-900 px-4">
+            <div className="w-2 h-2 rounded-full bg-indigo-500/50 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 };
@@ -292,6 +297,69 @@ const TabContent = ({
 }) => {
   const [selectedApplicationForOffer, setSelectedApplicationForOffer] =
     useState(null);
+  const [viewerState, setViewerState] = useState({
+    isOpen: false,
+    isLoading: false,
+    fileUrl: '',
+    error: '',
+    title: 'Document',
+  });
+
+  useEffect(() => {
+    return () => {
+      cleanupBlobUrl(viewerState.fileUrl);
+    };
+  }, [viewerState.fileUrl]);
+
+  const closeViewer = () => {
+    setViewerState((prev) => {
+      cleanupBlobUrl(prev.fileUrl);
+      return {
+        isOpen: false,
+        isLoading: false,
+        fileUrl: '',
+        error: '',
+        title: 'Document',
+      };
+    });
+  };
+
+  const openDocumentViewer = async (sourceUrl, title = 'Document') => {
+    if (!sourceUrl) {
+      toast.error('Document URL is missing');
+      return;
+    }
+
+    setViewerState({
+      isOpen: true,
+      isLoading: true,
+      fileUrl: '',
+      error: '',
+      title,
+    });
+
+    try {
+      const localUrl = await fetchDocumentBlobUrl(sourceUrl);
+      setViewerState((prev) => {
+        cleanupBlobUrl(prev.fileUrl);
+        return {
+          ...prev,
+          isLoading: false,
+          fileUrl: localUrl,
+        };
+      });
+    } catch (error) {
+      const message = `Unable to open document. ${error?.response?.status
+          ? `Status ${error.response.status}`
+          : error?.message || 'Please try again.'
+        }`;
+      setViewerState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: message,
+      }));
+    }
+  };
 
   const handleBulkShortlist = () => {
     const ids = arr.map(app => app._id);
@@ -300,6 +368,14 @@ const TabContent = ({
 
   return (
     <>
+      <DocumentViewerModal
+        isOpen={viewerState.isOpen}
+        isLoading={viewerState.isLoading}
+        fileUrl={viewerState.fileUrl}
+        error={viewerState.error}
+        title={viewerState.title}
+        onClose={closeViewer}
+      />
       <input
         type="radio"
         name={`${jobId}_tab`}
@@ -314,7 +390,7 @@ const TabContent = ({
         {arr.length ? (
           <div className="overflow-x-auto">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-               <div className="text-xs font-bold text-slate-500">
+              <div className="text-xs font-bold text-slate-500">
                 {isSmart ? (
                   <span className="flex items-center gap-2 text-purple-400 animate-pulse">
                     ✨ Smart AI Ranking Active
@@ -324,9 +400,9 @@ const TabContent = ({
                 )}
               </div>
 
-              
+
               {isSmart && jobType === 'pending' && (
-                <button 
+                <button
                   onClick={handleBulkShortlist}
                   className="px-4 py-2 rounded-xl bg-purple-600 text-white font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-purple-500/20 active:scale-95"
                 >
@@ -353,16 +429,16 @@ const TabContent = ({
 
               <tbody>
                 {arr.map((application) => {
-                    const {
-                      _id,
-                      applicantName,
-                      applicantId,
-                      coverLetter,
-                      resume,
-                      portfolio,
-                      status,
-                      offerLetterUrl,
-                    } = application;
+                  const {
+                    _id,
+                    applicantName,
+                    applicantId,
+                    coverLetter,
+                    resume,
+                    portfolio,
+                    status,
+                    offerLetterUrl,
+                  } = application;
                   return (
                     <tr key={_id}>
                       <td>
@@ -389,13 +465,23 @@ const TabContent = ({
                       <td>
                         <div className="flex gap-2">
                           {resume && (
-                            <a href={getFileUrl(resume)} target="_blank" rel="noopener" className="p-2 rounded-lg bg-white/5 text-indigo-400 hover:bg-indigo-400/10 transition-all border border-white/5" title="Resume">
-                               📄
-                            </a>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openDocumentViewer(
+                                  resume,
+                                  `${applicantName || 'Candidate'} — Resume`
+                                )
+                              }
+                              className="p-2 rounded-lg bg-white/5 text-indigo-400 hover:bg-indigo-400/10 transition-all border border-white/5"
+                              title="Resume"
+                            >
+                              📄
+                            </button>
                           )}
                           {portfolio && (
                             <a href={portfolio} target="_blank" rel="noopener" className="p-2 rounded-lg bg-white/5 text-amber-400 hover:bg-amber-400/10 transition-all border border-white/5" title="Portfolio">
-                               💼
+                              💼
                             </a>
                           )}
                         </div>
@@ -423,7 +509,7 @@ const TabContent = ({
                         <td className="text-right">
                           <div className="flex flex-wrap items-center justify-end gap-3">
                             <StatusBadge status={status} />
-                            
+
                             {status === 'HIRED' && (
                               <button
                                 className="px-3 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20"
@@ -432,7 +518,7 @@ const TabContent = ({
                                 Send Offer
                               </button>
                             )}
-  
+
                             {status === 'OFFER_ACCEPTED' && (
                               <button
                                 className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-500/20"
@@ -441,11 +527,21 @@ const TabContent = ({
                                 {application.offerLetterUrl ? 'Update Offer' : 'Upload Offer'}
                               </button>
                             )}
-                            
+
                             {application.offerLetterUrl && (
-                              <a href={getFileUrl(application.offerLetterUrl)} target="_blank" rel="noopener" className="p-1.5 rounded-lg bg-white/5 text-indigo-400 hover:text-white transition-all">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openDocumentViewer(
+                                    application.offerLetterUrl,
+                                    `${applicantName || 'Candidate'} — Offer Letter`
+                                  )
+                                }
+                                className="p-1.5 rounded-lg bg-white/5 text-indigo-400 hover:text-white transition-all"
+                                title="Offer Letter"
+                              >
                                 📂
-                              </a>
+                              </button>
                             )}
                           </div>
                         </td>

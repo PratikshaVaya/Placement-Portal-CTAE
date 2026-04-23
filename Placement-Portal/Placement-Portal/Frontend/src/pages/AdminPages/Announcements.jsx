@@ -13,8 +13,10 @@ import {
   getBatchOptions,
   getCourseOptions,
   getDepartmentOptions,
-  getFileUrl,
+  cleanupBlobUrl,
+  fetchDocumentBlobUrl,
 } from '../../utils';
+import { DocumentViewerModal } from '../../Components';
 
 const Announcements = () => {
   const courseOptions = useSelector((state) => state.courseOptions);
@@ -22,6 +24,76 @@ const Announcements = () => {
   const [targetType, setTargetType] = useState('all');
   const [deptOptions, setDeptOptions] = useState([]);
   const [batchOptions, setBatchOptions] = useState([]);
+
+  const [viewerState, setViewerState] = useState({
+    isOpen: false,
+    isLoading: false,
+    fileUrl: '',
+    error: '',
+    title: 'Attachment',
+  });
+
+  useEffect(() => {
+    return () => {
+      cleanupBlobUrl(viewerState.fileUrl);
+    };
+  }, [viewerState.fileUrl]);
+
+  const closeViewer = () => {
+    setViewerState((prev) => {
+      cleanupBlobUrl(prev.fileUrl);
+      return {
+        isOpen: false,
+        isLoading: false,
+        fileUrl: '',
+        error: '',
+        title: 'Attachment',
+      };
+    });
+  };
+
+  const handleViewAttachment = async (fileUrl, title = 'Attachment') => {
+    if (!fileUrl) {
+      toast.error('Attachment URL is missing');
+      return;
+    }
+
+    setViewerState({
+      isOpen: true,
+      isLoading: true,
+      fileUrl: '',
+      error: '',
+      title,
+    });
+
+    try {
+      const localUrl = await fetchDocumentBlobUrl(fileUrl);
+      setViewerState((prev) => {
+        cleanupBlobUrl(prev.fileUrl);
+        return {
+          ...prev,
+          isLoading: false,
+          fileUrl: localUrl,
+        };
+      });
+    } catch (error) {
+      console.error('Announcement attachment fetch failed:', {
+        fileUrl,
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        message: error?.message,
+      });
+      const errorMessage = `Unable to open attachment. ${error?.response?.status
+          ? `Status ${error.response.status}`
+          : error?.message || 'Please try again.'
+        }`;
+      setViewerState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
+    }
+  };
 
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(fetchAnnouncements());
@@ -86,6 +158,15 @@ const Announcements = () => {
 
   return (
     <div className="flex flex-col gap-8 text-slate-200">
+      <DocumentViewerModal
+        isOpen={viewerState.isOpen}
+        isLoading={viewerState.isLoading}
+        fileUrl={viewerState.fileUrl}
+        error={viewerState.error}
+        title={viewerState.title}
+        onClose={closeViewer}
+      />
+
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight">Announcements / Broadcast</h1>
         <p className="text-slate-400 text-base md:text-lg">Send urgent updates and important notices to students</p>
@@ -346,14 +427,18 @@ const Announcements = () => {
                 </div>
 
                 {announcement.noticeFile && (
-                  <a
-                    href={getFileUrl(announcement.noticeFile)}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
                     className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 text-sm font-medium border border-indigo-500/20 transition-all"
+                    onClick={() =>
+                      handleViewAttachment(
+                        announcement.noticeFile,
+                        `${announcement.noticeTitle || 'Announcement'} — Attachment`
+                      )
+                    }
                   >
                     View Attachment
-                  </a>
+                  </button>
                 )}
 
                 <div className="mt-6 pt-4 border-t border-white/5 grid gap-4 sm:grid-cols-3 text-xs text-slate-400 uppercase tracking-wide">

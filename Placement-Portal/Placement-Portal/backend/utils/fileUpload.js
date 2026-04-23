@@ -40,17 +40,18 @@ const fileUpload = async (file, folder, acceptType) => {
   const extension = path.extname(file.name);
   const tmpFileName = `${crypto.randomUUID()}${extension}`;
   const filePath = path.join(tmpFolder, tmpFileName);
-  
+
   try {
     await file.mv(filePath);
 
     // Upload to Cloudinary (Scalable & Secure)
+    // Documents use resource_type "raw" so URLs are /raw/upload/... — storing PDFs as
+    // image/upload/...pdf can cause delivery to require signatures or return 401 on fetch.
     const uploadedFile = await cloudinary.uploader.upload(filePath, {
       use_filename: true,
       unique_filename: true,
       folder: `Placement-Portal/${folder}`,
-      resource_type: 'auto',
-      format: acceptType === 'document' ? 'pdf' : undefined,
+      resource_type: acceptType === 'document' ? 'raw' : 'auto',
     });
 
     if (uploadedFile) {

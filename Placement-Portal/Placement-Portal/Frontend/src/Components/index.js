@@ -52,3 +52,4 @@ export { default as CourseModal } from './SuperAdmin/CourseModal';
 export { default as CompanyAdminCard } from './SuperAdmin/CompanyAdminCard';
 export { default as CompanyModal } from './SuperAdmin/CompanyModal';
 export { default as CompanyAdminModal } from './SuperAdmin/CompanyAdminModal';
+export { default as DocumentViewerModal } from './DocumentViewerModal';

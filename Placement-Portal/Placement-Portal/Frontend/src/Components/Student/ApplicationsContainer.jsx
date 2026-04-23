@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Link, useLoaderData } from 'react-router-dom';
 import { FiExternalLink } from 'react-icons/fi';
-import { getCompanyWebsite, getFileUrl } from '../../utils';
+import { toast } from 'react-toastify';
+import DocumentViewerModal from '../DocumentViewerModal';
+import { cleanupBlobUrl, fetchDocumentBlobUrl, getCompanyWebsite } from '../../utils';
 
 const ApplicationsContainer = () => {
   let pending = [],
@@ -37,19 +40,104 @@ const ApplicationsContainer = () => {
     }
   }
 
+  const [viewerState, setViewerState] = useState({
+    isOpen: false,
+    isLoading: false,
+    fileUrl: '',
+    error: '',
+    fileName: 'Resume',
+  });
+
+  useEffect(() => {
+    return () => {
+      cleanupBlobUrl(viewerState.fileUrl);
+    };
+  }, [viewerState.fileUrl]);
+
+  const closeViewer = () => {
+    setViewerState((prev) => {
+      cleanupBlobUrl(prev.fileUrl);
+      return {
+        isOpen: false,
+        isLoading: false,
+        fileUrl: '',
+        error: '',
+        fileName: 'Resume',
+      };
+    });
+  };
+
+  const handleViewResume = async (resumePath, fileName = 'Resume') => {
+    if (!resumePath) {
+      toast.error('Resume URL is missing');
+      return;
+    }
+
+    setViewerState({
+      isOpen: true,
+      isLoading: true,
+      fileUrl: '',
+      error: '',
+      fileName,
+    });
+
+    try {
+      const localUrl = await fetchDocumentBlobUrl(resumePath);
+
+      setViewerState((prev) => {
+        cleanupBlobUrl(prev.fileUrl);
+        return {
+          ...prev,
+          isLoading: false,
+          fileUrl: localUrl,
+        };
+      });
+    } catch (error) {
+      console.error('Resume viewer fetch failed:', {
+        resumePath,
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        message: error?.message,
+      });
+      const errorMessage =
+        `Unable to fetch resume document. ${error?.response?.status
+          ? `Status ${error.response.status}`
+          : error?.message || 'Please try again.'
+        }`;
+      setViewerState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage,
+      }));
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom duration-700">
+      <DocumentViewerModal
+        isOpen={viewerState.isOpen}
+        isLoading={viewerState.isLoading}
+        fileUrl={viewerState.fileUrl}
+        error={viewerState.error}
+        title={viewerState.fileName}
+        onClose={closeViewer}
+      />
+
       <div role="tablist" className="tabs tabs-bordered border-white/5 bg-slate-900/40 p-2 rounded-2xl backdrop-blur-xl">
-        <TabContent jobType="pending" arr={pending} />
-        <TabContent jobType="shortlisted" arr={shortlisted} />
-        <TabContent jobType="hired" arr={hired} />
-        <TabContent jobType="rejected" arr={rejected} />
+        <TabContent jobType="pending" arr={pending} onViewResume={handleViewResume} />
+        <TabContent
+          jobType="shortlisted"
+          arr={shortlisted}
+          onViewResume={handleViewResume}
+        />
+        <TabContent jobType="hired" arr={hired} onViewResume={handleViewResume} />
+        <TabContent jobType="rejected" arr={rejected} onViewResume={handleViewResume} />
       </div>
     </div>
   );
 };
 
-const TabContent = ({ jobType, arr }) => {
+const TabContent = ({ jobType, arr, onViewResume }) => {
   return (
     <>
       <input
@@ -80,8 +168,8 @@ const TabContent = ({ jobType, arr }) => {
                   return (
                     <tr key={_id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
                       <td className="py-5 px-6">
-                        <Link 
-                          to={`/student-dashboard/jobs/${jobId}`} 
+                        <Link
+                          to={`/student-dashboard/jobs/${jobId}`}
                           className="text-white font-bold hover:text-indigo-400 transition-colors"
                         >
                           {profile}
@@ -102,20 +190,20 @@ const TabContent = ({ jobType, arr }) => {
                         </p>
                       </td>
                       <td className="py-5 px-6">
-                        <a 
-                          href={getFileUrl(resume)} 
-                          target="_blank" 
-                          rel="noopener"
+                        <button
                           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-300 hover:bg-indigo-600/20 hover:text-indigo-400 hover:border-indigo-500/30 transition-all"
+                          onClick={() =>
+                            onViewResume(resume, `${profile || 'Job'} - Resume`)
+                          }
                         >
                           View Resume
-                        </a>
+                        </button>
                       </td>
                       <td className="py-5 px-6 text-right">
                         {portfolio ? (
-                          <a 
-                            href={portfolio} 
-                            target="_blank" 
+                          <a
+                            href={portfolio}
+                            target="_blank"
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-300 hover:bg-indigo-600/20 hover:text-indigo-400 hover:border-indigo-500/30 transition-all"
                           >
                             Portfolio <FiExternalLink size={10} />

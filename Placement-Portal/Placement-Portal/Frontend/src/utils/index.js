@@ -37,4 +37,5 @@ export {
 } from './fetchQueries';
 
 export { formatDate, getCompanyWebsite, getFileUrl } from './jsUtils';
+export { fetchDocumentBlobUrl, cleanupBlobUrl } from './documentviewer';
 

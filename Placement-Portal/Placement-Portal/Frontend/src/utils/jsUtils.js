@@ -45,13 +45,6 @@ export function getFileUrl(path) {
   // Cloudinary Proxy Fix: Route through backend to avoid security/adblocker blocks
   if (url.includes('cloudinary.com')) {
     const proxyBase = import.meta.env.VITE_API_URL;
-    // Append .pdf only if missing and it's an image/upload path
-    if (
-      url.includes('/image/upload/') &&
-      !url.toLowerCase().match(/\.(pdf|jpg|jpeg|png|webp|gif|svg)$/)
-    ) {
-      url = `${url}.pdf`;
-    }
     
     // Construct proxy URL
     return `${proxyBase}/document/view?url=${encodeURIComponent(url)}`;
