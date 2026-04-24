@@ -26,8 +26,8 @@ const CoverLetterModal = ({ isOpen, content, title, onClose }) => {
         </div>
 
         <div className="relative z-10">
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/5 shadow-inner max-h-[60vh] overflow-y-auto custom-scrollbar">
-            <p className="text-slate-300 text-lg italic leading-relaxed whitespace-pre-wrap font-medium">
+          <div className="p-8 rounded-3xl bg-white/5 border border-white/5 shadow-inner max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <p className="text-slate-200 text-lg leading-relaxed whitespace-pre-wrap font-semibold mb-6">
               {content || "No cover letter content provided."}
             </p>
           </div>
