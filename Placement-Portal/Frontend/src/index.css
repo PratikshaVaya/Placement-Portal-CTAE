@@ -17,12 +17,21 @@
   }
 
   /* Hide navigation and UI elements */
-  nav, .navbar, footer, button, .no-print, [role="navigation"] {
+  nav,
+  .navbar,
+  footer,
+  button,
+  .no-print,
+  [role="navigation"] {
     display: none !important;
   }
 
   /* Reset potential layout containers that might interfere */
-  .min-h-screen, .max-w-7xl, .max-w-6xl, .max-w-\[1600px\], .mx-auto {
+  .min-h-screen,
+  .max-w-7xl,
+  .max-w-6xl,
+  .max-w-\[1600px\],
+  .mx-auto {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -69,16 +78,19 @@
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.02);
   border-radius: 10px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 10px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4);
   border: 2px solid transparent;

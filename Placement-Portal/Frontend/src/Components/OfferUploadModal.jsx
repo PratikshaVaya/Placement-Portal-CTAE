@@ -25,6 +25,15 @@ const OfferUploadModal = ({ applicationId, onClose }) => {
     title: 'Offer Letter',
   });
 
+  // Handle Escape key to close
+  useEffect(() => {
+    const handleEsc = (event) => {
+      if (event.keyCode === 27) onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   useEffect(() => {
     return () => {
       cleanupBlobUrl(viewerState.fileUrl);
