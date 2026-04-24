@@ -619,11 +619,6 @@ const addCompanyAdmin = async (req, res) => {
 };
 
 const getAdminStats = async (req, res) => {
-  // Sync all students who have at least one application or placement record
-  // to ensure legacy data is updated with the new isPlaced/placementType fields.
-  const studentsToSync = await UserModel.find({ role: 'student' }).select('_id');
-  await Promise.all(studentsToSync.map(student => updateStudentPlacementStatus(student._id)));
-
   const [
     studentCount,
     companyCount,

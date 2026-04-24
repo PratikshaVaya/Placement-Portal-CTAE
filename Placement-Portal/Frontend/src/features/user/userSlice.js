@@ -2,7 +2,19 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {};
 
-initialState.user = JSON.parse(localStorage.getItem('user')) || null;
+const getUserFromLocalStorage = () => {
+  const user = localStorage.getItem('user');
+  if (user && user !== 'undefined') {
+    try {
+      return JSON.parse(user);
+    } catch (error) {
+      return null;
+    }
+  }
+  return null;
+};
+
+initialState.user = getUserFromLocalStorage();
 
 const userSlice = createSlice({
   name: 'user',

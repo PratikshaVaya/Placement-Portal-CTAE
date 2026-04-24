@@ -14,7 +14,7 @@ const ScoreFieldInput = ({ type, label, data, semesterNum }) => {
           min="1"
           max="10"
           step="0.01"
-          className="w-28 border-b-2 border-b-black focus:border-b-blue-500 focus:outline-none text-slate-900 placeholder:text-slate-400 font-medium"
+          className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/20 !text-white placeholder:!text-slate-400 focus:border-indigo-500 focus:outline-none transition-all font-bold text-sm shadow-inner"
         />
         <input
           disabled={type === 'public'}
@@ -24,7 +24,7 @@ const ScoreFieldInput = ({ type, label, data, semesterNum }) => {
           step="1"
           placeholder="Backs Count"
           defaultValue={data?.backsCount}
-          className="w-28 border-b-2 border-b-black focus:border-b-blue-500 focus:outline-none text-slate-900 placeholder:text-slate-400 font-medium"
+          className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/20 !text-white placeholder:!text-slate-400 focus:border-indigo-500 focus:outline-none transition-all font-bold text-sm shadow-inner"
         />
       </div>
     </div>
