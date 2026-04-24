@@ -121,15 +121,17 @@ app.use(fileUpload({ useTempFiles: true }));
 app.use(express.static('./public'));
 
 app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/user', [authenticateUser, userRouter]);
+app.use('/api/v1/user', [authenticateUser, authLimiter, userRouter]);
 app.use('/api/v1/student', [
   authenticateUser,
   authorizeRoles('student'),
+  authLimiter,
   studentRoutes,
 ]);
 app.use('/api/v1/student', [
   authenticateUser,
   authorizeRoles('student'),
+  authLimiter,
   resumeRoutes,
 ]);
 app.use('/api/v1/courses', [authenticateUser, courseRouter]);
@@ -140,7 +142,7 @@ app.use('/api/v1/admin', [
   adminRouter,
 ]);
 
-app.use('/api/v1/company', [authenticateUser, companyRouter]);
+app.use('/api/v1/company', [authenticateUser, authLimiter, companyRouter]);
 
 // AI Resume Analyzer (independent module — student auth required)
 app.use('/api/v1/ai-resume', [

@@ -273,7 +273,8 @@ const getExperienceById = async (req, res) => {
   const id = req?.params?.id;
   if (!id?.trim()) throw new CustomAPIError.BadRequestError('Id is required!');
 
-  const experience = await ExperienceModel.findById(id);
+  const studentId = req.user.userId;
+  const experience = await ExperienceModel.findOne({ _id: id, studentId });
 
   if (!experience)
     throw new CustomAPIError.NotFoundError(
@@ -489,7 +490,8 @@ const getPlacementById = async (req, res) => {
   const id = req?.params?.id;
   if (!id?.trim()) throw new CustomAPIError.BadRequestError('Id is required!');
 
-  const placement = await PlacementModel.findById(id);
+  const studentId = req.user.userId;
+  const placement = await PlacementModel.findOne({ _id: id, studentId });
   if (!placement)
     throw new CustomAPIError.NotFoundError(`No placement found with id: ${id}`);
 

@@ -10,18 +10,27 @@ const fileUpload = async (file, folder, acceptType) => {
   const fileSize = file.size; // bytes
   let maxFileSize, acceptMIME, maxFileMB;
 
-  if (acceptType == 'image') {
-    acceptMIME = 'image/';
-    maxFileSize = 1 * 1024 * 1024; // 1 MB
-    maxFileMB = 1;
-  } else if (acceptType == 'document') {
-    acceptMIME = 'application/pdf';
+  const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  const allowedDocTypes = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ];
+
+  if (acceptType === 'image') {
+    if (!allowedImageTypes.includes(fileMimeType)) {
+      throw new CustomAPIError.BadRequestError('Invalid image format! Only JPG, PNG, and WEBP are allowed.');
+    }
     maxFileSize = 2 * 1024 * 1024; // 2 MB
     maxFileMB = 2;
-  }
-
-  if (!fileMimeType.startsWith(acceptMIME)) {
-    throw new CustomAPIError.BadRequestError('Invalid file format!');
+  } else if (acceptType === 'document') {
+    if (!allowedDocTypes.includes(fileMimeType)) {
+      throw new CustomAPIError.BadRequestError('Invalid document format! Only PDF, DOC, and DOCX are allowed.');
+    }
+    maxFileSize = 5 * 1024 * 1024; // 5 MB
+    maxFileMB = 5;
+  } else {
+    throw new CustomAPIError.BadRequestError('Invalid upload category!');
   }
 
   if (fileSize > maxFileSize) {

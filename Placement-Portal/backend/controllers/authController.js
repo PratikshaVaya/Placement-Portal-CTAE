@@ -52,7 +52,6 @@ const login = async (req, res) => {
   const user = await UserModel.findOne({ email }).select('+password');
 
   if (!user) {
-    console.log('no user');
     throw new CustomAPIError.UnauthenticatedError('Authentication failed');
   }
 

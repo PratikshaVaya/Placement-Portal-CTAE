@@ -484,8 +484,10 @@ function isActionValid(action, currentStatus) {
 
 const getOfferDetails = async (req, res) => {
   const { applicationId } = req.params;
-  const application = await JobApplicationModel.findById(applicationId);
-  if (!application) throw new CustomAPIError.BadRequestError('Invalid application id');
+  const { companyId } = req.user;
+
+  const application = await JobApplicationModel.findOne({ _id: applicationId, companyId });
+  if (!application) throw new CustomAPIError.BadRequestError('Invalid application id or unauthorized access');
   res.status(StatusCodes.OK).json({ success: true, offer: { status: application.status, offerLetter: application.offerLetterUrl } });
 };
 
