@@ -36,7 +36,9 @@ const getJobsForStudent = async (req, res) => {
     });
   }
 
-  const student = await UserModel.findById(userId);
+  const student = await UserModel.findById(userId).select(
+    'activeBacklogs skills hiredStatus hiredJobId lastJobFetched'
+  );
   const studentEducation = await EducationModel.findOne({ studentId: userId });
   const studentPersonal = await PersonalDataModel.findOne({ studentId: userId });
 
@@ -146,7 +148,7 @@ const getStudentJobById = async (req, res) => {
   if (!job)
     throw new CustomAPIError.NotFoundError('Job not found or not targeted for you.');
 
-  const student = await UserModel.findById(userId);
+  const student = await UserModel.findById(userId).select('activeBacklogs');
   const studentEducation = await EducationModel.findOne({ studentId: userId });
   const studentPersonal = await PersonalDataModel.findOne({ studentId: userId });
 
@@ -187,7 +189,9 @@ const createJobApplication = async (req, res) => {
   const { userId: applicantId } = req.user;
 
   // Requirement 4: Application Restriction (On-Campus Offer received)
-  const applicant = await UserModel.findById(applicantId);
+  const applicant = await UserModel.findById(applicantId).select(
+    'name batchId departmentId jobsApplied jobApplications'
+  );
   
   // Find any on-campus offer received (Accepted, Rejected, or Sent)
   const onCampusOffer = await JobApplicationModel.findOne({
@@ -282,7 +286,7 @@ const getOfferStatus = async (req, res) => {
 
 const acceptOffer = async (req, res) => {
   const userId = req.user.userId;
-  const user = await UserModel.findById(userId);
+  const user = await UserModel.findById(userId).select('hiredStatus');
   if (user.hiredStatus !== 'OFFER_SENT') throw new CustomAPIError.BadRequestError('No pending offer.');
 
   const application = await JobApplicationModel.findOne({ applicantId: userId, status: 'OFFER_SENT' });
@@ -302,7 +306,7 @@ const acceptOffer = async (req, res) => {
 
 const rejectOffer = async (req, res) => {
   const userId = req.user.userId;
-  const user = await UserModel.findById(userId);
+  const user = await UserModel.findById(userId).select('hiredStatus');
   if (user.hiredStatus !== 'OFFER_SENT') throw new CustomAPIError.BadRequestError('No pending offer.');
 
   const application = await JobApplicationModel.findOne({ applicantId: userId, status: 'OFFER_SENT' });

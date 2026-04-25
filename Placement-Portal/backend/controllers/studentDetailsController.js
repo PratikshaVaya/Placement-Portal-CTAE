@@ -88,7 +88,9 @@ const updatePersonalData = async (req, res) => {
     }
   );
 
-  const student = await UserModel.findById(studentId);
+  const student = await UserModel.findById(studentId).select(
+    'personalDetails photo activeBacklogs completedBacklogs'
+  );
   if (!student.personalDetails) {
     student.personalDetails = personalDataDoc._id;
   }
@@ -149,7 +151,9 @@ const updateEducationData = async (req, res) => {
 
   const userId = req?.user?.userId;
 
-  const student = await UserModel.findById(userId);
+  const student = await UserModel.findById(userId).select(
+    'courseLevel isLateralEntry semestersCount educationDetails'
+  );
   if (!student) throw new CustomAPIError.BadRequestError('Invalid student');
 
   const {
@@ -320,7 +324,7 @@ const createExperience = async (req, res) => {
     id: experience._id,
   });
 
-  const student = await UserModel.findById(studentId);
+  const student = await UserModel.findById(studentId).select('experiences');
   student.experiences.push(experience._id);
   await student.save();
 };
@@ -406,7 +410,7 @@ const deleteExperience = async (req, res) => {
     id,
   });
 
-  const student = await UserModel.findById(studentId);
+  const student = await UserModel.findById(studentId).select('experiences');
   student.experiences = student.experiences.filter(
     (ele) => ele.toString() !== id
   );
@@ -449,7 +453,9 @@ const createPlacement = async (req, res) => {
     joiningLetter = fileURL;
   }
 
-  const student = await UserModel.findById(studentId);
+  const student = await UserModel.findById(studentId).select(
+    'departmentName placements'
+  );
 
   const placement = await PlacementModel.create({
     studentId,
@@ -609,7 +615,7 @@ const deletePlacement = async (req, res) => {
     id,
   });
 
-  const student = await UserModel.findById(studentId);
+  const student = await UserModel.findById(studentId).select('placements');
   student.placements = student.placements.filter(
     (ele) => ele.toString() !== id
   );
@@ -660,7 +666,7 @@ const createTraining = async (req, res) => {
     id: training._id,
   });
 
-  const student = await UserModel.findById(studentId);
+  const student = await UserModel.findById(studentId).select('trainings');
   student.trainings.push(training._id);
   await student.save();
 };
@@ -772,7 +778,7 @@ const deleteTraining = async (req, res) => {
     id,
   });
 
-  const student = await UserModel.findById(studentId);
+  const student = await UserModel.findById(studentId).select('trainings');
   student.trainings = student.trainings.filter((ele) => ele.toString() !== id);
   await student.save();
 };

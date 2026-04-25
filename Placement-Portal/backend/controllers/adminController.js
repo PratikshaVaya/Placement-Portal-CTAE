@@ -39,7 +39,8 @@ const getStudents = async (req, res) => {
     )
     .sort('rollNo')
     .skip(skip)
-    .limit(limit);
+    .limit(limit)
+    .lean();
 
   res.status(StatusCodes.OK).json({
     success: true,
@@ -671,7 +672,7 @@ const getAdminStats = async (req, res) => {
   ]);
 
   // Combine package data with manual placements to find the real average/highest
-  const manualPlacements = await PlacementModel.find({ isOnCampus: false });
+  const manualPlacements = await PlacementModel.find({ isOnCampus: false }).lean();
   const studentPackages = {};
 
   // Process on-campus packages
@@ -731,7 +732,9 @@ const getAdminStats = async (req, res) => {
         type: { $literal: 'On-Campus' },
         date: '$updatedAt'
       }
-    }
+    },
+    { $sort: { date: -1 } },
+    { $limit: 20 }
   ]);
 
   // 8. Get detailed list of placed students (Off-campus)
@@ -755,7 +758,9 @@ const getAdminStats = async (req, res) => {
         type: { $literal: 'Off-Campus' },
         date: '$createdAt'
       }
-    }
+    },
+    { $sort: { date: -1 } },
+    { $limit: 20 }
   ]);
 
   // Combine and sort by date

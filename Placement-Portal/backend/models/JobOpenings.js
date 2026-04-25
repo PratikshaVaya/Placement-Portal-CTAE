@@ -5,6 +5,7 @@ const CompanySchema = new mongoose.Schema(
     id: {
       type: mongoose.Types.ObjectId,
       required: [true, 'Company Id is required'],
+      index: true,
     },
 
     name: {
@@ -73,6 +74,7 @@ const JobPosterSchema = new mongoose.Schema(
     id: {
       type: mongoose.Types.ObjectId,
       required: [true, 'Job Poster Id is required'],
+      index: true,
     },
 
     name: {
@@ -241,6 +243,7 @@ const JobOpeningSchema = new mongoose.Schema(
       type: String,
       enum: ['open', 'closed', 'expired'],
       default: 'open',
+      index: true,
     },
 
     applicants: {

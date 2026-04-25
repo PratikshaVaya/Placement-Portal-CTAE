@@ -25,6 +25,7 @@ const JobApplicationSchema = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       required: true,
       ref: 'Company',
+      index: true,
     },
 
     status: {
@@ -39,6 +40,7 @@ const JobApplicationSchema = new mongoose.Schema(
         'OFFER_REJECTED',
       ],
       default: 'APPLIED',
+      index: true,
     },
 
     portfolio: {

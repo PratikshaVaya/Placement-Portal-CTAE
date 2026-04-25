@@ -49,7 +49,9 @@ const login = async (req, res) => {
 }
   email = email.trim().toLowerCase();
 
-  const user = await UserModel.findOne({ email }).select('+password');
+  const user = await UserModel.findOne({ email }).select(
+    '+password name role email courseId batchId departmentId companyId forcePasswordReset isBlocked'
+  );
 
   if (!user) {
     throw new CustomAPIError.UnauthenticatedError('Authentication failed');

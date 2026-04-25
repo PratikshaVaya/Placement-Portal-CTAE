@@ -38,6 +38,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       enum: ['student', 'admin', 'company_admin'],
       default: 'student',
+      index: true,
     },
 
     isBlocked: {
@@ -201,6 +202,7 @@ const UserSchema = new mongoose.Schema(
     companyId: {
       type: mongoose.Types.ObjectId,
       ref: 'Company',
+      index: true,
     },
 
     companyRole: {
@@ -233,6 +235,7 @@ const UserSchema = new mongoose.Schema(
     isPlaced: {
       type: Boolean,
       default: false,
+      index: true,
     },
 
     placementType: {
