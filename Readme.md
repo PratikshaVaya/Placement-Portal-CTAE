@@ -54,19 +54,21 @@ A premium, state-of-the-art Campus Placement Management System designed for **CT
 
 ```bash
 Placement-Portal/
-├── Frontend/           # React application (Vite)
+├── index.html          # Static Landing Page (Entry point)
+├── ctae-logo.png       # Branding Assets
+├── ctaecampus.jpeg     # Hero Assets
+├── Frontend/           # Student/Admin Portal (React + Vite)
 │   ├── src/
-│   │   ├── Components/ # Reusable UI elements (Modals, Cards, Tables)
-│   │   ├── pages/      # Route-based page components
-│   │   ├── store/      # Redux state configuration
-│   │   └── utils/      # API helpers and formatting logic
-│   └── Dockerfile      # Multi-stage Nginx build
-├── backend/            # Express.js API
-│   ├── controllers/    # Business logic (Bulk Import, AI Analysis, Analytics)
-│   ├── models/         # Mongoose schemas (User, Job, Notice, Course)
-│   ├── routes/         # API endpoint definitions
-│   └── utils/          # Middleware and utilities
-└── docker-compose.yml  # Orchestrates full stack deployment
+│   │   ├── Components/ # UI elements
+│   │   ├── pages/      # Route-based pages
+│   │   └── store/      # State management
+│   └── Dockerfile      # Frontend Build
+├── backend/            # Express.js API (MERN Stack)
+│   ├── controllers/    # Business logic
+│   ├── models/         # Mongoose schemas
+│   ├── routes/         # API endpoints
+│   └── utils/          # Middleware & Auth
+└── docker-compose.yml  # Full-stack Orchestration
 ```
 
 ---
@@ -80,19 +82,24 @@ Follow these steps to run the portal on your local machine:
 - [Node.js](https://nodejs.org/) (Optional, for local development without Docker).
 
 ### 2. Environment Configuration
-Create a `.env` file in the **backend** directory:
+Create a `.env` file in the **root** directory:
 ```env
+# Database & Security
 MONGO_URI=your_mongodb_atlas_uri
 JWT_SECRET=your_secret_key
-JWT_LIFETIME=1d
+NODE_ENV=development
+PORT=5001
+
+# API Configuration
+VITE_API_URL=http://localhost:5001/api/v1
+
+# Cloudinary (File Uploads)
 CLOUD_NAME=your_cloudinary_name
 CLOUD_API_KEY=your_cloudinary_key
 CLOUD_API_SECRET=your_cloudinary_secret
-```
 
-Create a `.env` file in the **root** directory (for Docker):
-```env
-VITE_API_URL=http://localhost:5000/api/v1
+# AI Features (Optional)
+GROQ_API_KEY=your_groq_api_key
 ```
 
 ### 3. Run with Docker (Recommended)

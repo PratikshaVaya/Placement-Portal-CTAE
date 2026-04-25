@@ -869,150 +869,6 @@
       text-align: center
     }
 
-    .ltabs {
-      display: flex;
-      gap: 5px;
-      margin-bottom: 1.8rem;
-      background: rgba(7, 19, 32, .6);
-      padding: 5px;
-      border-radius: 12px
-    }
-
-    .tbtn {
-      flex: 1;
-      padding: 9px 10px;
-      background: transparent;
-      border: none;
-      cursor: none;
-      border-radius: 9px;
-      font-size: .77rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      letter-spacing: .03em;
-      transition: all .3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      font-family: 'DM Sans', sans-serif
-    }
-
-    .tbtn.act {
-      background: linear-gradient(135deg, var(--blue), var(--blue-light));
-      color: #fff;
-      box-shadow: 0 4px 15px rgba(26, 86, 219, .4)
-    }
-
-    .tcont {
-      display: none
-    }
-
-    .tcont.act {
-      display: block;
-      animation: tabA .35s cubic-bezier(.25, .46, .45, .94)
-    }
-
-    @keyframes tabA {
-      from {
-        opacity: 0;
-        transform: translateY(10px)
-      }
-
-      to {
-        opacity: 1;
-        transform: none
-      }
-    }
-
-    .fg {
-      margin-bottom: 1rem
-    }
-
-    .fg label {
-      display: block;
-      font-size: .7rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      letter-spacing: .07em;
-      text-transform: uppercase
-    }
-
-    .fg input {
-      width: 100%;
-      padding: 11px 14px;
-      background: rgba(7, 19, 32, .7);
-      border: 1.5px solid rgba(255, 255, 255, .1);
-      border-radius: 10px;
-      color: #fff;
-      font-family: 'DM Sans', sans-serif;
-      font-size: .88rem;
-      transition: all .25s;
-      outline: none
-    }
-
-    .fg input:focus {
-      border-color: var(--blue-bright);
-      box-shadow: 0 0 0 3px rgba(96, 165, 250, .15)
-    }
-
-    .fg input::placeholder {
-      color: rgba(122, 156, 191, .45)
-    }
-
-    .fsub {
-      width: 100%;
-      padding: 12px;
-      margin-top: .5rem;
-      background: linear-gradient(135deg, var(--blue), var(--blue-light));
-      border: none;
-      color: #fff;
-      font-weight: 700;
-      font-size: .88rem;
-      border-radius: 10px;
-      cursor: none;
-      font-family: 'DM Sans', sans-serif;
-      box-shadow: 0 8px 25px rgba(26, 86, 219, .4);
-      transition: all .3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      position: relative;
-      overflow: hidden
-    }
-
-    .fsub::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .2), transparent);
-      transition: left .5s
-    }
-
-    .fsub:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 35px rgba(26, 86, 219, .55)
-    }
-
-    .fsub:hover::after {
-      left: 100%
-    }
-
-    .ffoot {
-      text-align: center;
-      margin-top: .8rem;
-      font-size: .73rem;
-      color: var(--text-muted)
-    }
-
-    .ffoot a {
-      color: #86efac;
-      text-decoration: none
-    }
 
     /* ROLE BUTTONS */
     .role-btns {
@@ -1513,7 +1369,14 @@
       font-size: .82rem;
       color: var(--text-muted);
       white-space: nowrap;
-      transition: all .35s
+      transition: all .35s, transform .4s;
+      opacity: 0;
+      transform: translateY(20px)
+    }
+
+    .rlogo.appeared {
+      opacity: 1;
+      transform: none
     }
 
     .rlogo:hover {
@@ -1647,7 +1510,6 @@
       right: 8px;
       background: #4ade80;
       color: #071320 !important;
-      color: #fff;
       font-size: .58rem;
       font-weight: 800;
       letter-spacing: .1em;
@@ -2456,17 +2318,7 @@
       }
     }
 
-    /* Horizontal scroll-slide for recruiter logos row */
-    .rlogo {
-      transition: all .35s, transform .4s;
-      opacity: 0;
-      transform: translateY(20px)
-    }
 
-    .rlogo.appeared {
-      opacity: 1;
-      transform: none
-    }
 
     /* Counter flip */
     .knum {
@@ -2692,23 +2544,16 @@
         <!-- College identity: name on left, logo on right -->
         <div class="coll-id">
           <div class="coll-name">
-            <!-- <h2>College of Technology &amp; Engineering, <span>Udaipur</span></h2> -->
             <h1 class="hero-tagline">
               College Of Technology & Engineering,<br>
               <span class="hlb"> Udaipur</span>
             </h1>
             <p>MPUAT — Est. 1963 &nbsp;|&nbsp; University Road, Ganpati Nagar, Udaipur (Raj.)</p>
           </div>
-          <!-- <img src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e8/CTAE_logo.png/120px-CTAE_logo.png" alt="CTAE Logo" class="coll-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"> -->
-          <!-- <div class="coll-logo-fb" style="display:none">CT</div> -->
         </div>
 
         <div class="hero-badge"><span class="dot"></span>Placement Season 2025–26 Now Open</div>
 
-        <!-- <h1 class="hero-tagline">
-        College Of Technology & Engineering,<br>
-        <span class="hlb"> Udaipur</span>
-      </h1> -->
         <p class="hero-sub">Recruit from a pool of technically skilled, industry-ready graduates across 10+ engineering
           disciplines. CTAE Udaipur — six decades of academic excellence, one dedicated placement cell.</p>
 
@@ -2726,8 +2571,6 @@
             <div class="lbl">Recruiters 2024-25</div>
           </div>
         </div>
-
-
       </div>
 
       <div class="hero-right">
@@ -3420,4 +3263,5 @@
     function doAdminLogin() { window.location.href = '/login?role=admin'; }
   </script>
 </body>
+
 </html>
