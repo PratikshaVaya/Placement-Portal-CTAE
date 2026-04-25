@@ -42,6 +42,7 @@ const attachCookieToResponse = (res, userToken) => {
     signed: true,
     expires: new Date(Date.now() + 30 * oneDay), // 30 days
     sameSite: isProduction ? 'none' : 'lax',
+    path: '/',
   });
 };
 

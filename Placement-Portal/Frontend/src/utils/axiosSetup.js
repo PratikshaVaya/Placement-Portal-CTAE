@@ -8,9 +8,15 @@ export const customFetch = axios.create({
   withCredentials: true,
 });
 
-customFetch.interceptors.response.use(function (response) {
-  if (response.status === 401 || response.status === 403) {
-    return redirect(window.location.origin);
+customFetch.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 || error?.response?.status === 403) {
+      // For cross-site redirects in an interceptor, window.location is more reliable than react-router redirect
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
+    }
+    return Promise.reject(error);
   }
-  return response;
-});
+);
