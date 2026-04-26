@@ -1,3 +1,6 @@
+import React from 'react';
+import { useSelector } from 'react-redux';
+import posthog from 'posthog-js';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -273,6 +276,21 @@ const router = createBrowserRouter([
 ]);
 
 const App = () => {
+  const { user } = useSelector((state) => state.userState);
+
+  React.useEffect(() => {
+    if (user?._id) {
+      posthog.identify(user._id, {
+        email: user.email,
+        role: user.role,
+        branch: user.branch,
+        name: user.name
+      });
+    } else if (!user) {
+      posthog.reset();
+    }
+  }, [user]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

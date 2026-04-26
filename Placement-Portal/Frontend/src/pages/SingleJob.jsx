@@ -6,6 +6,7 @@ import { FiExternalLink } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { FaEdit, FaExternalLinkAlt } from 'react-icons/fa';
 import { MdDelete } from 'react-icons/md';
+import posthog from 'posthog-js';
 import Markdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
@@ -44,6 +45,13 @@ export const action = (queryClient, store) => {
         store.dispatch(resetJobApply());
         document.getElementById('jobApplicationModal').close();
         document.getElementById('jobApplicationFormError').innerText = '';
+        
+        // Track successful application
+        posthog.capture('Job Application Success', {
+          job_id: jobId,
+          intent: 'jobApplyAction'
+        });
+
         toast.success('Applied successfully!');
         return redirect('/student-dashboard/jobs');
       } catch (error) {
@@ -110,6 +118,16 @@ const SingleJob = () => {
 
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (job) {
+      posthog.capture('Job Viewed', {
+        job_id: _id,
+        profile: profile,
+        company: company.name
+      });
+    }
+  }, [_id]);
 
   return (
     <div className="max-w-6xl mx-auto flex flex-col gap-10 animate-in fade-in duration-700">

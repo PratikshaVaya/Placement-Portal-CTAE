@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { customFetch } from '../utils';
 import { toast } from 'react-toastify';
+import posthog from 'posthog-js';
 import {
   FiUpload, FiZap, FiDownload, FiCheckCircle, FiAlertCircle,
   FiTarget, FiTrendingUp, FiAward, FiList, FiRefreshCw, FiX
@@ -116,12 +117,18 @@ const AIResumeAnalyzer = () => {
       const { data } = await customFetch.post('/ai-resume/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      if (data.success) {
         setResult(data.analysis);
         setResumeText(data.resumeText);
+        
+        // Track the success event
+        posthog.capture('AI Resume Analyzed', {
+          score: data.analysis.matchScore,
+          file_name: resumeFile.name,
+          has_description: !!jobDescription
+        });
+
         toast.success('Analysis complete!');
         fetchHistory();
-      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Analysis failed.');
     } finally { setIsAnalyzing(false); }
