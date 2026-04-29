@@ -16,14 +16,15 @@ const debugLog = (message, meta = {}) => {
   console.log(`[DocumentProxy] ${message}`, meta);
 };
 
-const extractAssetId = (assetUrl = '', cloudName = '') => {
+const extractAssetId = (assetUrl = '') => {
   try {
     const parsed = new URL(assetUrl);
     if (parsed.hostname !== 'res.cloudinary.com') return null;
 
     const path = decodeURIComponent(parsed.pathname);
+    // Path pattern: /<cloud_name>/<resource_type>/<type>/...
     const baseRegex = new RegExp(
-      `^/${cloudName}/(?:image|raw|video)/(?:upload|private|authenticated)/(?:v\\d+/)?(.+)$`
+      `^/[^/]+/(?:image|raw|video)/(?:upload|private|authenticated)/(?:v\\d+/)?(.+)$`
     );
     const match = path.match(baseRegex);
     if (!match) return null;
@@ -136,8 +137,7 @@ const viewDocument = async (req, res) => {
     const cloudName = process.env.CLOUD_NAME;
 
     const isTrustedCloudinary =
-      targetUrl.hostname === 'res.cloudinary.com' &&
-      targetUrl.pathname.startsWith(`/${cloudName}/`);
+      targetUrl.hostname === 'res.cloudinary.com';
 
     const isTrustedLocalhost =
       ['localhost', '127.0.0.1'].includes(targetUrl.hostname) &&
@@ -150,7 +150,7 @@ const viewDocument = async (req, res) => {
 
     isCloudinaryUrl = isTrustedCloudinary;
     if (isCloudinaryUrl) {
-      requestedAssetId = extractAssetId(url, cloudName);
+      requestedAssetId = extractAssetId(url);
     }
     debugLog('URL validation passed', {
       host: targetUrl.hostname,
@@ -168,15 +168,20 @@ const viewDocument = async (req, res) => {
 
   // 1. Admins have global access
   if (role === 'admin') {
-    // Proceed
+    debugLog('Authorized: User is admin');
   } else {
     let isAuthorized = false;
 
     // Check if it's the user's own profile photo
     const user = await UserModel.findById(userId).select('photo courseId departmentId batchId');
-    if (user?.photo === url) {
-      isAuthorized = true;
-      debugLog('Authorized via user profile photo', { userId });
+    if (user) {
+      if (user.photo === url) {
+        isAuthorized = true;
+        debugLog('Authorized via user profile photo', { userId });
+      }
+    } else {
+      debugLog('User not found in DB', { userId });
+      throw new CustomAPIError.UnauthorizedError('User account not found.');
     }
 
     // Check if it's a notice targeting this student (or anyone)
@@ -188,7 +193,7 @@ const viewDocument = async (req, res) => {
         }).select('noticeFile targetType receivingCourse receivingDepartments receivingBatches');
 
         notice = candidateNotices.find((n) => {
-          const id = extractAssetId(n.noticeFile, process.env.CLOUD_NAME);
+          const id = extractAssetId(n.noticeFile);
           if (!id) return false;
           return (
             id.withExt === requestedAssetId.withExt ||
@@ -200,11 +205,11 @@ const viewDocument = async (req, res) => {
         if (notice.targetType === 'all') {
           isAuthorized = true;
           debugLog('Authorized via notice (all)', { noticeId: notice._id });
-        } else if (role === 'student') {
+        } else if (role === 'student' && user) {
           // Check targeting logic
           const matchesCourse = !notice.receivingCourse || notice.receivingCourse.toString() === user.courseId?.toString();
-          const matchesDept = notice.receivingDepartments.length === 0 || notice.receivingDepartments.some(d => d.toString() === user.departmentId?.toString());
-          const matchesBatch = notice.receivingBatches.length === 0 || notice.receivingBatches.some(b => b.toString() === user.batchId?.toString());
+          const matchesDept = !notice.receivingDepartments?.length || notice.receivingDepartments.some(d => d.toString() === user.departmentId?.toString());
+          const matchesBatch = !notice.receivingBatches?.length || notice.receivingBatches.some(b => b.toString() === user.batchId?.toString());
 
           if (matchesCourse && matchesDept && matchesBatch) {
             isAuthorized = true;
@@ -234,10 +239,9 @@ const viewDocument = async (req, res) => {
         }).select('resume offerLetterUrl applicantId companyId');
 
         application = candidateApplications.find((app) => {
-          const resumeId = extractAssetId(app.resume || '', process.env.CLOUD_NAME);
+          const resumeId = extractAssetId(app.resume || '');
           const offerId = extractAssetId(
-            app.offerLetterUrl || '',
-            process.env.CLOUD_NAME
+            app.offerLetterUrl || ''
           );
           const matchesResume =
             resumeId &&
@@ -253,14 +257,14 @@ const viewDocument = async (req, res) => {
 
       if (application) {
         // Applicant can see their own
-        if (application.applicantId.toString() === userId) {
+        if (application.applicantId && application.applicantId.toString() === userId) {
           isAuthorized = true;
           debugLog('Authorized via own application document', {
             applicationId: application._id,
           });
         }
         // Company admin for this company can see it
-        if (role === 'company_admin' && application.companyId.toString() === companyId) {
+        if (role === 'company_admin' && application.companyId && application.companyId.toString() === companyId) {
           isAuthorized = true;
           debugLog('Authorized via company admin application document', {
             applicationId: application._id,
@@ -285,8 +289,8 @@ const viewDocument = async (req, res) => {
         }).select('offerLetter joiningLetter studentId');
 
         placement = candidatePlacements.find((p) => {
-          const offerId = extractAssetId(p.offerLetter || '', process.env.CLOUD_NAME);
-          const joiningId = extractAssetId(p.joiningLetter || '', process.env.CLOUD_NAME);
+          const offerId = extractAssetId(p.offerLetter || '');
+          const joiningId = extractAssetId(p.joiningLetter || '');
 
           const matchesOffer = offerId && (offerId.withExt === requestedAssetId.withExt || offerId.withoutExt === requestedAssetId.withoutExt);
           const matchesJoining = joiningId && (joiningId.withExt === requestedAssetId.withExt || joiningId.withoutExt === requestedAssetId.withoutExt);
@@ -297,7 +301,7 @@ const viewDocument = async (req, res) => {
 
       if (placement) {
         // Only the student who owns the placement record or an admin can see it
-        if (placement.studentId.toString() === userId) {
+        if (placement.studentId && placement.studentId.toString() === userId) {
           isAuthorized = true;
           debugLog('Authorized via own placement document', { placementId: placement._id });
         }
@@ -305,7 +309,6 @@ const viewDocument = async (req, res) => {
     }
 
     if (!isAuthorized) {
-
       debugLog('Authorization denied', {
         userId,
         role,
@@ -320,8 +323,7 @@ const viewDocument = async (req, res) => {
   try {
     // Robust parsing of Cloudinary URL parts
     // Pattern: /cloud_name/resource_type/type/version/public_id.format
-    const cloudName = process.env.CLOUD_NAME;
-    const regex = new RegExp(`/${cloudName}/(image|raw|video)/(upload|private|authenticated)/(v\\d+/)?(.+)$`);
+    const regex = new RegExp(`/[^/]+/(image|raw|video)/(upload|private|authenticated)/(v\\d+/)?(.+)$`);
     const match = isCloudinaryUrl ? url.match(regex) : null;
 
     let signedUrl = url;
@@ -391,7 +393,7 @@ const viewDocument = async (req, res) => {
       }
 
       // Fallback for stale version URLs (v123...) that may return 404/410
-      const versionedPathRegex = new RegExp(`/${cloudName}/${resourceType}/upload/v\\d+/`);
+      const versionedPathRegex = new RegExp(`/[^/]+/${resourceType}/upload/v\\d+/`);
       if (versionedPathRegex.test(url)) {
         const unversionedUrl = url.replace(/\/v\d+\//, '/');
         if (!candidateUrls.includes(unversionedUrl)) {
@@ -405,7 +407,10 @@ const viewDocument = async (req, res) => {
         resourceType === 'image' &&
         publicIdWithExt.toLowerCase().endsWith('.pdf')
       ) {
-        const rawUploadUrl = url.replace(`/${cloudName}/image/upload/`, `/${cloudName}/raw/upload/`);
+        // Extract cloud name from URL for raw fallback
+        const cloudMatch = url.match(/\/([^\/]+)\/image\/upload\//);
+        const urlCloudName = cloudMatch ? cloudMatch[1] : process.env.CLOUD_NAME;
+        const rawUploadUrl = url.replace(`/${urlCloudName}/image/upload/`, `/${urlCloudName}/raw/upload/`);
         if (!candidateUrls.includes(rawUploadUrl)) {
           candidateUrls.push(rawUploadUrl);
         }
@@ -687,8 +692,12 @@ const viewDocument = async (req, res) => {
       }
     }
 
-    if (!response) throw lastError;
+    if (!response) {
+      console.error('Document Proxy: All candidate URLs and fallbacks failed.');
+      throw lastError || new Error('All fetch attempts failed');
+    }
 
+    console.log('Document Proxy: Success! Delivering stream...');
     res.setHeader('Content-Type', response.headers['content-type'] || 'application/pdf');
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Cache-Control', 'public, max-age=3600');
@@ -696,21 +705,29 @@ const viewDocument = async (req, res) => {
     response.data.on('error', (err) => {
       console.error('Stream error during document delivery:', err);
       if (!res.headersSent) {
-        res.status(500).send('Stream error during document delivery');
+        res.status(500).json({ success: false, message: 'Stream error during document delivery' });
       }
     }).pipe(res);
   } catch (error) {
-    console.error('Document Proxy Error:', {
+    console.error('Document Proxy Error Detail:', {
+      name: error.name,
       message: error.message,
       stack: error.stack,
       status: error?.response?.status,
-      statusText: error?.response?.statusText,
+      customStatus: error?.statusCode,
       url,
-      requestedAssetId,
     });
-    const statusCode = error.response?.status || 500;
+    
+    let statusCode = 500;
+    if (typeof error.statusCode === 'number') statusCode = error.statusCode;
+    else if (error.response && typeof error.response.status === 'number') statusCode = error.response.status;
+    
     if (!res.headersSent) {
-      res.status(statusCode).send(`Failed to fetch document (Status: ${statusCode} ${error.response?.statusText || ''})`);
+      res.status(statusCode).json({ 
+        success: false, 
+        message: `Failed to fetch document. ${error.message}`,
+        status: statusCode
+      });
     }
   }
 };

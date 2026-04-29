@@ -222,11 +222,13 @@ const PastScoreModal = ({ modalData }) => {
           <div id="pastScoreError" className="text-red-500 text-sm font-medium"></div>
 
           <div className="flex justify-end gap-4 pt-4 border-t border-white/5">
-            <form method="dialog">
-              <button className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold transition-all">
-                Cancel
-              </button>
-            </form>
+            <button 
+              type="button"
+              className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold transition-all"
+              onClick={() => document.getElementById('pastScoreModal').close()}
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               className="px-8 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"

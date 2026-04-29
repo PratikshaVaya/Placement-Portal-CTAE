@@ -37,7 +37,7 @@ const getJobsForStudent = async (req, res) => {
   }
 
   const student = await UserModel.findById(userId).select(
-    'activeBacklogs skills hiredStatus hiredJobId lastJobFetched'
+    'activeBacklogs completedBacklogs isLateralEntry skills hiredStatus hiredJobId lastJobFetched'
   );
   const studentEducation = await EducationModel.findOne({ studentId: userId });
   const studentPersonal = await PersonalDataModel.findOne({ studentId: userId });
@@ -48,6 +48,7 @@ const getJobsForStudent = async (req, res) => {
     studentEducation?.intermediate?.score != null &&
     studentEducation?.graduation?.aggregateGPA != null &&
     student?.activeBacklogs != null &&
+    student?.completedBacklogs != null &&
     studentPersonal?.dateOfBirth != null;
 
   let jobs;
@@ -148,7 +149,7 @@ const getStudentJobById = async (req, res) => {
   if (!job)
     throw new CustomAPIError.NotFoundError('Job not found or not targeted for you.');
 
-  const student = await UserModel.findById(userId).select('activeBacklogs');
+  const student = await UserModel.findById(userId).select('activeBacklogs completedBacklogs isLateralEntry');
   const studentEducation = await EducationModel.findOne({ studentId: userId });
   const studentPersonal = await PersonalDataModel.findOne({ studentId: userId });
 
@@ -157,6 +158,7 @@ const getStudentJobById = async (req, res) => {
     studentEducation?.intermediate?.score != null &&
     studentEducation?.graduation?.aggregateGPA != null &&
     student?.activeBacklogs != null &&
+    student?.completedBacklogs != null &&
     studentPersonal?.dateOfBirth != null;
 
   let eligibilityStatus = { isEligible: true, reasons: [], matchCount: 0, totalCriteria: 0 };
@@ -190,7 +192,7 @@ const createJobApplication = async (req, res) => {
 
   // Requirement 4: Application Restriction (On-Campus Offer received)
   const applicant = await UserModel.findById(applicantId).select(
-    'name batchId departmentId jobsApplied jobApplications'
+    'name batchId departmentId jobsApplied jobApplications activeBacklogs completedBacklogs isLateralEntry'
   );
   
   // Find any on-campus offer received (Accepted, Rejected, or Sent)

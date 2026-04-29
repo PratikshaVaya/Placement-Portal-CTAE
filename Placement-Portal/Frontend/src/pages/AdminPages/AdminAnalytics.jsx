@@ -8,7 +8,8 @@ import {
   FaUserCheck, 
   FaRupeeSign, 
   FaTrophy,
-  FaChartPie
+  FaChartPie,
+  FaDownload
 } from 'react-icons/fa';
 
 export const loader = (queryClient) => async () => {
@@ -56,6 +57,38 @@ const AdminAnalytics = () => {
     'from-rose-500 to-red-400',
     'from-indigo-500 to-blue-400',
   ];
+
+  const downloadCSV = () => {
+    if (!stats.placedStudents || stats.placedStudents.length === 0) {
+      toast.error("No data to download!");
+      return;
+    }
+
+    const headers = ["Student Name", "Roll No", "Company", "Package (LPA)", "Type", "Date"];
+    const rows = stats.placedStudents.map(student => [
+      student.studentName,
+      student.rollNo,
+      student.companyName,
+      student.package > 100 ? (student.package / 100000).toFixed(2) : student.package,
+      student.type,
+      new Date(student.date).toLocaleDateString()
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `recent_placements_${new Date().toLocaleDateString().replace(/\//g, '-')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-10">
@@ -211,9 +244,18 @@ const AdminAnalytics = () => {
               <div className="w-1.5 h-8 bg-indigo-500 rounded-full"></div>
               <h3 className="text-2xl font-black text-white tracking-tight">Recent Placements</h3>
             </div>
-            <span className="px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-slate-400">
-              {stats.placedStudents?.length || 0} Total Records
-            </span>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={downloadCSV}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all shadow-lg shadow-indigo-500/10"
+              >
+                <FaDownload size={12} />
+                Download CSV
+              </button>
+              <span className="px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-slate-400">
+                {stats.placedStudents?.length || 0} Total Records
+              </span>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

@@ -76,11 +76,13 @@ const JobApplicationForm = () => {
           )}
 
           <div className="flex justify-end gap-4 pt-6 border-t border-white/5">
-            <form method="dialog">
-              <button className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold transition-all">
-                Cancel
-              </button>
-            </form>
+            <button 
+              type="button"
+              className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold transition-all"
+              onClick={() => document.getElementById('jobApplicationModal').close()}
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               className={`px-10 py-3 rounded-xl font-bold transition-all shadow-lg active:scale-95 ${
