@@ -1094,7 +1094,7 @@
       margin-bottom: 1.5rem
     }
 
-    /* ─── ABOUT (navy-mid) ─── */
+    /* ABOUT (navy-mid) */
     #about {
       background: var(--navy-mid)
     }
@@ -1333,7 +1333,7 @@
       line-height: 1.65
     }
 
-    /* ─── RECRUITERS (navy-mid) ─── */
+    /*  RECRUITERS (navy-mid) */
     #recruiters {
       background: var(--navy-mid);
       padding: 4rem 0
@@ -1369,14 +1369,7 @@
       font-size: .82rem;
       color: var(--text-muted);
       white-space: nowrap;
-      transition: all .35s, transform .4s;
-      opacity: 0;
-      transform: translateY(20px)
-    }
-
-    .rlogo.appeared {
-      opacity: 1;
-      transform: none
+      transition: all .35s
     }
 
     .rlogo:hover {
@@ -1387,7 +1380,7 @@
       box-shadow: 0 8px 25px rgba(0, 0, 0, .3)
     }
 
-    /* ─── PLACEMENTS (navy) ─── */
+    /* PLACEMENTS (navy) */
     #placements {
       background: var(--navy)
     }
@@ -1593,11 +1586,7 @@
       margin-top: 3px
     }
 
-
-    /* ===============================
-   GUIDELINES SECTION
-================================= */
-
+    /*GUIDELINES SECTION*/
     #guidelines {
       background: var(--navy-mid);
       position: relative;
@@ -1743,12 +1732,8 @@
       width: 42%;
     }
 
-    /* ===============================
-   MOBILE RESPONSIVE
-================================= */
-
+    /*MOBILE RESPONSIVE*/
     @media(max-width:768px) {
-
       .tlwrap::before {
         left: 20px;
       }
@@ -1774,7 +1759,7 @@
       }
     }
 
-    /* ─── CONTACT (navy) ─── */
+    /* CONTACT (navy)  */
     #contact {
       background: var(--navy)
     }
@@ -2202,9 +2187,7 @@
       text-decoration: none
     }
 
-    /* ═══════════════════════════════
-   SCROLL & SLIDE ANIMATIONS
-═══════════════════════════════ */
+    /*SCROLL & SLIDE ANIMATIONS */
     /* base reveal */
     [data-anim] {
       opacity: 0;
@@ -2318,7 +2301,17 @@
       }
     }
 
+    /* Horizontal scroll-slide for recruiter logos row */
+    .rlogo {
+      transition: all .35s, transform .4s;
+      opacity: 0;
+      transform: translateY(20px)
+    }
 
+    .rlogo.appeared {
+      opacity: 1;
+      transform: none
+    }
 
     /* Counter flip */
     .knum {
@@ -2473,7 +2466,6 @@
 </head>
 
 <body>
-
   <div id="cur"></div>
   <div id="cring"></div>
   <div id="cglow"></div>
@@ -2544,16 +2536,21 @@
         <!-- College identity: name on left, logo on right -->
         <div class="coll-id">
           <div class="coll-name">
+            <!-- <h2>College of Technology &amp; Engineering, <span>Udaipur</span></h2> -->
             <h1 class="hero-tagline">
               College Of Technology & Engineering,<br>
               <span class="hlb"> Udaipur</span>
             </h1>
             <p>MPUAT — Est. 1963 &nbsp;|&nbsp; University Road, Ganpati Nagar, Udaipur (Raj.)</p>
           </div>
+          <!-- <img src="https://upload.wikimedia.org/wikipedia/en/thumb/e/e8/CTAE_logo.png/120px-CTAE_logo.png" alt="CTAE Logo" class="coll-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"> -->
+          <!-- <div class="coll-logo-fb" style="display:none">CT</div> -->
         </div>
-
         <div class="hero-badge"><span class="dot"></span>Placement Season 2025–26 Now Open</div>
-
+        <!-- <h1 class="hero-tagline">
+        College Of Technology & Engineering,<br>
+        <span class="hlb"> Udaipur</span>
+      </h1> -->
         <p class="hero-sub">Recruit from a pool of technically skilled, industry-ready graduates across 10+ engineering
           disciplines. CTAE Udaipur — six decades of academic excellence, one dedicated placement cell.</p>
 
@@ -2780,6 +2777,7 @@
           placement achievements from 2024-25.</p>
       </div>
       <div class="plflex">
+
         <!-- Brochures: current + 3 previous years only -->
         <div data-anim="left">
           <div class="bsec-ttl">Documents &amp; Reports</div>
@@ -3019,7 +3017,7 @@
     </div>
   </section>
 
-  <!-- ════ FOOTER ════ -->
+  <!--FOOTER -->
   <footer>
     <div class="container">
       <div class="ftop">
@@ -3226,7 +3224,6 @@
     }
 
     /* ── SECTION ENTRANCE WIPE (CSS-driven, JS triggers class) ── */
-    // Adds a class when section first enters viewport, enabling the overlay sweep
     const secObs = new IntersectionObserver(entries => {
       entries.forEach(e => {
         if (e.isIntersecting) e.target.classList.add('section-entered');

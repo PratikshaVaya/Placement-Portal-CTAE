@@ -23,6 +23,10 @@ services:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_POSTHOG_KEY=${VITE_POSTHOG_KEY}
+        - VITE_POSTHOG_HOST=${VITE_POSTHOG_HOST}
     container_name: placement-portal-frontend
     ports:
       - "${FRONTEND_PORT:-5173}:80"
