@@ -243,6 +243,11 @@ const UserSchema = new mongoose.Schema(
       enum: ['none', 'on-campus', 'off-campus', 'both'],
       default: 'none',
     },
+
+    resume: {
+      type: String, // URL to the saved resume
+      trim: true,
+    },
   },
   { timestamps: true, versionKey: false }
 );

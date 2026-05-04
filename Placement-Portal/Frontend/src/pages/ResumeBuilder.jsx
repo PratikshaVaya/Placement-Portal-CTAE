@@ -60,8 +60,23 @@ const ResumeBuilder = () => {
   };
 
   const downloadPDF = async () => {
-    window.print();
-    toast.success('Recommendation: Select "Save as PDF" and set margins to "None"');
+    try {
+      const url = `${import.meta.env.VITE_API_URL}/student/resume/download`;
+      // We use a direct window.open or a link click for the file download
+      window.open(url, '_blank');
+      
+      // Notify the user that syncing is in progress
+      toast.info('Syncing resume to your profile...');
+
+      // Invalidate the profile query so that the "View Resume" button appears on the profile
+      // Cloudinary uploads take a moment, so we wait 3 seconds before refreshing the state
+      setTimeout(() => {
+        queryClient.invalidateQueries(['privateProfile']);
+        toast.success('Profile synced with new resume!');
+      }, 3500);
+    } catch (error) {
+      toast.error('Failed to download resume');
+    }
   };
 
   if (isLoading) {

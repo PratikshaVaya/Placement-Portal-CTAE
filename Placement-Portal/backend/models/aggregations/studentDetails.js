@@ -32,6 +32,7 @@ function studentProfileDetailsAgg(studentId, isPrivate = false) {
         placements: 1,
         activeBacklogs: 1,
         completedBacklogs: 1,
+        resume: 1,
       },
     },
     {

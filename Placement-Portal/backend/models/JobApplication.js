@@ -6,7 +6,7 @@ const JobApplicationSchema = new mongoose.Schema(
     jobId: {
       type: mongoose.Types.ObjectId,
       required: true,
-      ref: 'JobOpening',
+      ref: 'JobOpenings',
     },
 
     applicantId: {
@@ -74,7 +74,7 @@ const JobApplicationSchema = new mongoose.Schema(
 JobApplicationSchema.index({ jobId: 1, applicantId: 1 }, { unique: true });
 
 const JobApplicationModel = mongoose.model(
-  'JobApplication',
+  'JobApplications',
   JobApplicationSchema
 );
 

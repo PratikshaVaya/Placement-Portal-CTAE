@@ -13,6 +13,7 @@ const StudentIntro = () => {
     photo,
     activeBacklogs,
     completedBacklogs,
+    resume,
   } = useSelector((state) => state.studentProfileState);
 
   const DetailItem = ({ label, value }) => (
@@ -37,9 +38,22 @@ const StudentIntro = () => {
         </div>
 
         <div className="flex-1 flex flex-col gap-6 w-full">
-          <div className="text-center md:text-left">
-            <h2 className="text-3xl font-black text-white tracking-tight">{name}</h2>
-            <p className="text-indigo-400 font-medium mt-1">{email}</p>
+          <div className="text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-black text-white tracking-tight">{name}</h2>
+              <p className="text-indigo-400 font-medium mt-1">{email}</p>
+            </div>
+            {resume && (
+              <a
+                href={getFileUrl(resume)}
+                target="_blank"
+                rel="noreferrer"
+                className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all flex items-center gap-2 text-sm font-bold shadow-xl backdrop-blur-md active:scale-95 group/btn"
+              >
+                <span>View Resume</span>
+                <span className="text-lg transition-transform group-hover/btn:translate-x-1">→</span>
+              </a>
+            )}
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 p-6 rounded-2xl bg-black/20 border border-white/5">

@@ -9,7 +9,7 @@ const { StatusCodes } = require('http-status-codes');
 const { validateStudentCourse } = require('../utils');
 const JobOpeningModel = require('../models/JobOpenings');
 const { PlacementModel, EducationModel, CurrentScoreModel, PastScoreModel, ExperienceModel, TrainingModel, PersonalDataModel, } = require('../models/student');
-const { default: mongoose } = require('mongoose');
+const mongoose = require('mongoose');
 const { updateStudentPlacementStatus } = require('../utils/placementUtils');
 
 const getStudents = async (req, res) => {

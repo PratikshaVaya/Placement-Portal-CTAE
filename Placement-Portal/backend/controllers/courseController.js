@@ -4,6 +4,12 @@ const {
   BatchModel,
 } = require('../models/Course');
 
+const {
+  syncCourseName,
+  syncDepartmentName,
+  syncBatchYear,
+} = require('../utils/syncUtils');
+
 const CustomAPIError = require('../errors');
 const { StatusCodes } = require('http-status-codes');
 
@@ -85,6 +91,11 @@ const updateCourse = async (req, res) => {
       `No course found with id: ${courseId}`
     );
 
+  // Sync with Students if Course Name changed
+  if (course.courseName !== courseName) {
+    await syncCourseName(course._id, courseName);
+  }
+
   res.status(StatusCodes.OK).json({
     success: true,
     message: 'Course updated!',
@@ -154,13 +165,19 @@ const updateBatch = async (req, res) => {
     );
 
   for (let [_, batch] of course.batches) {
-    if (batch._id.toString === batchId) continue;
+    if (batch._id.toString() === batchId) continue;
     if (batch.batchYear == batchYear)
       throw new CustomAPIError.BadRequestError('This batch already exists!');
   }
 
+  const oldBatchYear = batch.batchYear;
   batch.batchYear = batchYear;
   await course.save();
+
+  // Sync with Students if Batch Year changed
+  if (oldBatchYear !== batchYear) {
+    await syncBatchYear(course._id, batch._id, batchYear);
+  }
 
   res.status(StatusCodes.OK).json({
     success: true,
@@ -262,9 +279,15 @@ const updateDepartment = async (req, res) => {
       );
   }
 
+  const oldDepartmentName = department.departmentName;
   department['departmentName'] = departmentName;
   department['departmentCode'] = departmentCode;
   await course.save();
+
+  // Sync with Students if Department Name changed
+  if (oldDepartmentName !== departmentName) {
+    await syncDepartmentName(course._id, department._id, oldDepartmentName, departmentName);
+  }
 
   res.status(StatusCodes.OK).json({
     success: true,

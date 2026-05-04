@@ -5,7 +5,7 @@ const OfferSchema = new mongoose.Schema(
     jobApplicationId: {
       type: mongoose.Types.ObjectId,
       required: true,
-      ref: 'JobApplication',
+      ref: 'JobApplications',
       unique: true,
     },
 

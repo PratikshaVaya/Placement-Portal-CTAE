@@ -312,6 +312,6 @@ JobOpeningSchema.pre('save', async function () {
   }
 });
 
-const JobOpeningModel = mongoose.model('JobOpening', JobOpeningSchema);
+const JobOpeningModel = mongoose.model('JobOpenings', JobOpeningSchema);
 
 module.exports = JobOpeningModel;

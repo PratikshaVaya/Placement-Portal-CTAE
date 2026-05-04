@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { syncCourseName, syncDepartmentName, syncBatchYear } = require('../utils/syncUtils');
 
 const BatchSchema = new mongoose.Schema(
   {
@@ -119,6 +120,23 @@ const CourseSchema = new mongoose.Schema(
   },
   { versionKey: false }
 );
+
+// SYNC MIDDLEWARE
+CourseSchema.post('save', async function (doc) {
+  if (this.isModified('courseName')) {
+    await syncCourseName(this._id, this.courseName);
+  }
+});
+
+CourseSchema.post('findOneAndUpdate', async function (doc) {
+  if (doc) {
+    const update = this.getUpdate();
+    if (update.courseName || (update.$set && update.$set.courseName)) {
+      const newName = update.courseName || update.$set.courseName;
+      await syncCourseName(doc._id, newName);
+    }
+  }
+});
 
 /* TODO:
 Ensure uniqueness of batches and departments in each course

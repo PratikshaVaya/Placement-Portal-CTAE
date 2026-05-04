@@ -3,6 +3,10 @@ const UserModel = require('../models/User');
 const CustomAPIError = require('../errors');
 const { StatusCodes } = require('http-status-codes');
 const PDFDocument = require('pdfkit');
+const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
 // Get or create resume for student
 const getResume = async (req, res) => {
@@ -73,14 +77,26 @@ const generatePDF = async (req, res) => {
     },
   });
 
+  const fullName = `${resume.header.firstName || ''} ${resume.header.lastName || ''}`.trim();
+  const fileName = `resume-${fullName.replace(/\s+/g, '-') || 'Student'}-${Date.now()}.pdf`;
+
   // Set response headers for PDF
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="resume-${resume.header.firstName || 'Resume'}.pdf"`
+    `attachment; filename="${fileName}"`
   );
 
-  doc.pipe(res);
+  // Prepare for saving to Cloudinary
+  const tmpFolder = path.resolve(__dirname, '../tmp');
+  if (!fs.existsSync(tmpFolder)) {
+    fs.mkdirSync(tmpFolder, { recursive: true });
+  }
+  const tmpPath = path.join(tmpFolder, `${crypto.randomUUID()}.pdf`);
+  const writeStream = fs.createWriteStream(tmpPath);
+
+  doc.pipe(writeStream); // Save to tmp file for Cloudinary
+  doc.pipe(res); // Send to user for download
 
   const pageHeight = doc.page.height - 72; // 72 points = 1 inch (top and bottom margins)
   let currentY = 36;
@@ -110,8 +126,7 @@ const generatePDF = async (req, res) => {
 
 
   // Header
-  const fullName = `${resume.header.firstName || ''} ${resume.header.lastName || ''}`.trim();
-  addText(fullName, 36, 14, true);
+  addText(fullName, 36, 16, true, 'center');
   currentY -= 2;
 
   const address = [
@@ -122,10 +137,16 @@ const generatePDF = async (req, res) => {
   ]
     .filter(Boolean)
     .join(', ');
-  const contactInfo = `${address} • ${resume.header.email} • ${resume.header.phone}`;
-  addText(contactInfo, 36, 9);
   
-  // Profile links - make them clickable
+  const contactParts = [];
+  if (address) contactParts.push(address);
+  if (resume.header.email) contactParts.push(resume.header.email);
+  if (resume.header.phone) contactParts.push(resume.header.phone);
+  
+  const contactInfo = contactParts.join(' • ');
+  addText(contactInfo, 36, 9, false, 'center');
+  
+  // Profile links - make them clickable and centered
   const profileLinksList = [
     resume.header.linkedIn && { name: 'LinkedIn', url: resume.header.linkedIn },
     resume.header.github && { name: 'GitHub', url: resume.header.github },
@@ -133,41 +154,53 @@ const generatePDF = async (req, res) => {
   ].filter(Boolean);
   
   if (profileLinksList.length > 0) {
-    doc.fontSize(9).fillColor('0066cc');
-    const linkText = profileLinksList.map((link) => link.name).join(' • ');
-    const linkTextWidth = doc.widthOfString(linkText);
+    const linkFontSize = 9;
+    doc.fontSize(linkFontSize).fillColor('0066cc');
     
-    // Add the text with underline styling
-    doc.text(linkText, 36, currentY, {
-      underline: true,
-      link: undefined, // pdfkit will add links per-text in next step
-    });
-    
-    // Create individual clickable regions for each link
-    let xOffset = 36;
+    // Calculate total width to center the links line
+    let totalWidth = 0;
     profileLinksList.forEach((link, idx) => {
-      const linkNameWidth = doc.widthOfString(link.name);
-      // Add annotation for clickable link
-      doc.annotate(xOffset, currentY - 10, linkNameWidth, 12, {
-        Subtype: 'Link',
-        A: {
-          S: 'URI',
-          URI: link.url,
-        },
-      });
-      xOffset += linkNameWidth + doc.widthOfString(' • ');
+      totalWidth += doc.widthOfString(link.name);
+      if (idx < profileLinksList.length - 1) {
+        totalWidth += doc.widthOfString(' • ');
+      }
     });
     
-    doc.fillColor('black');
-    currentY = doc.y + 2;
+    let startX = (doc.page.width - totalWidth) / 2;
+    let currentX = startX;
+    
+    profileLinksList.forEach((link, idx) => {
+      // Draw link text
+      doc.text(link.name, currentX, currentY, {
+        link: link.url,
+        underline: true,
+        continued: idx < profileLinksList.length - 1
+      });
+      
+      currentX += doc.widthOfString(link.name);
+      
+      if (idx < profileLinksList.length - 1) {
+        doc.fillColor('black').text(' • ', { continued: true, underline: false });
+        doc.fillColor('0066cc');
+        currentX += doc.widthOfString(' • ');
+      }
+    });
+    
+    // Reset for next lines
+    doc.fillColor('black').text('', { continued: false }); 
+    currentY = doc.y + 4;
   }
   
-  currentY += 4;
+  // Horizontal line below header
+  doc.moveTo(36, currentY).lineTo(doc.page.width - 36, currentY).stroke();
+  currentY += 8;
 
   // Education Section
   if (resume.education && resume.education.length > 0) {
-    addText('Education', 36, 11, true);
-    currentY -= 2;
+    currentY += 4;
+    addText('EDUCATION', 36, 11, true);
+    doc.moveTo(36, currentY - 2).lineTo(doc.page.width - 36, currentY - 2).lineWidth(0.5).stroke();
+    currentY += 4;
 
     resume.education.forEach((edu, idx) => {
       if (currentY > pageHeight - 40) {
@@ -176,26 +209,32 @@ const generatePDF = async (req, res) => {
       }
 
       const eduHeader = `${edu.institution}`;
+      const eduLocation = `${edu.city || ''}${edu.state ? ', ' + edu.state : ''}`.trim();
+      
       doc.fontSize(10).font('Helvetica-Bold');
-      doc.text(eduHeader, 36, currentY, { width: doc.page.width - 200 });
+      doc.text(eduHeader, 36, currentY);
+      
+      // Right-aligned location
+      if (eduLocation) {
+        doc.text(eduLocation, 36, currentY, { align: 'right', width: doc.page.width - 72 });
+      }
       currentY = doc.y;
 
       const degreeInfo = `${edu.degree}${edu.concentration ? ', ' + edu.concentration : ''}`;
-      doc.fontSize(9).font('Helvetica');
+      const graduationDate = `${edu.graduationMonth || ''} ${edu.graduationYear || ''}`.trim();
+      
+      doc.fontSize(9).font('Helvetica-Oblique');
       doc.text(degreeInfo, 36, currentY);
+      
+      // Right-aligned graduation date
+      if (graduationDate) {
+        doc.text(graduationDate, 36, currentY, { align: 'right', width: doc.page.width - 72 });
+      }
       currentY = doc.y;
 
-      if (edu.gpa || edu.graduationMonth || edu.graduationYear) {
-        const eduDetails = [
-          edu.gpa ? `GPA: ${edu.gpa}` : '',
-          edu.graduationMonth && edu.graduationYear
-            ? `Graduation: ${edu.graduationMonth} ${edu.graduationYear}`
-            : '',
-        ]
-          .filter(Boolean)
-          .join('  ');
-        doc.fontSize(9);
-        doc.text(eduDetails, 36, currentY);
+      if (edu.gpa) {
+        doc.fontSize(9).font('Helvetica');
+        doc.text(`GPA: ${edu.gpa}`, 36, currentY);
         currentY = doc.y;
       }
 
@@ -222,25 +261,28 @@ const generatePDF = async (req, res) => {
       }
 
       const expHeader = `${exp.organization}`;
+      const expLocation = `${exp.city || ''}${exp.location ? ', ' + exp.location : ''}`.trim();
+      
       doc.fontSize(10).font('Helvetica-Bold');
-      doc.text(expHeader, 36, currentY, { width: doc.page.width - 200 });
+      doc.text(expHeader, 36, currentY);
+      
+      if (expLocation) {
+        doc.text(expLocation, 36, currentY, { align: 'right', width: doc.page.width - 72 });
+      }
       currentY = doc.y;
 
       const roleInfo = exp.positionTitle || '';
       const dateRange = `${exp.startMonth || ''} ${exp.startYear || ''} – ${
-        exp.isCurrent ? 'Present' : exp.endMonth + ' ' + (exp.endYear || '')
+        exp.isCurrent ? 'Present' : (exp.endMonth || '') + ' ' + (exp.endYear || '')
       }`.trim();
-      const roleDetails = `${roleInfo}${dateRange ? ' | ' + dateRange : ''}`;
-      doc.fontSize(9).font('Helvetica');
-      doc.text(roleDetails, 36, currentY);
-      currentY = doc.y;
-
-      if (exp.city || exp.location) {
-        const location = `${exp.city || ''}${exp.location ? ', ' + exp.location : ''}`.trim();
-        doc.fontSize(9);
-        doc.text(location, 36, currentY);
-        currentY = doc.y;
+      
+      doc.fontSize(9).font('Helvetica-Oblique');
+      doc.text(roleInfo, 36, currentY);
+      
+      if (dateRange) {
+        doc.text(dateRange, 36, currentY, { align: 'right', width: doc.page.width - 72 });
       }
+      currentY = doc.y;
 
       if (exp.bulletPoints && exp.bulletPoints.length > 0) {
         exp.bulletPoints.slice(0, 4).forEach((bullet) => {
@@ -260,9 +302,10 @@ const generatePDF = async (req, res) => {
 
   // Leadership & Activities Section
   if (resume.leadership && resume.leadership.length > 0) {
-    currentY += 2;
-    addText('Leadership & Activities', 36, 11, true);
-    currentY -= 2;
+    currentY += 4;
+    addText('LEADERSHIP & ACTIVITIES', 36, 11, true);
+    doc.moveTo(36, currentY - 2).lineTo(doc.page.width - 36, currentY - 2).lineWidth(0.5).stroke();
+    currentY += 4;
 
     resume.leadership.slice(0, 2).forEach((lead) => {
       if (currentY > pageHeight - 50) {
@@ -271,17 +314,27 @@ const generatePDF = async (req, res) => {
       }
 
       const leadHeader = `${lead.organization}`;
+      const leadLocation = `${lead.city || ''}${lead.state ? ', ' + lead.state : ''}`.trim();
+      
       doc.fontSize(10).font('Helvetica-Bold');
-      doc.text(leadHeader, 36, currentY, { width: doc.page.width - 200 });
+      doc.text(leadHeader, 36, currentY);
+      
+      if (leadLocation) {
+        doc.text(leadLocation, 36, currentY, { align: 'right', width: doc.page.width - 72 });
+      }
       currentY = doc.y;
 
       const roleInfo = lead.role || '';
       const dateRange = `${lead.startMonth || ''} ${lead.startYear || ''} – ${
-        lead.isCurrent ? 'Present' : lead.endMonth + ' ' + (lead.endYear || '')
+        lead.isCurrent ? 'Present' : (lead.endMonth || '') + ' ' + (lead.endYear || '')
       }`.trim();
-      const roleDetails = `${roleInfo}${dateRange ? ' | ' + dateRange : ''}`;
-      doc.fontSize(9).font('Helvetica');
-      doc.text(roleDetails, 36, currentY);
+      
+      doc.fontSize(9).font('Helvetica-Oblique');
+      doc.text(roleInfo, 36, currentY);
+      
+      if (dateRange) {
+        doc.text(dateRange, 36, currentY, { align: 'right', width: doc.page.width - 72 });
+      }
       currentY = doc.y;
 
       if (lead.bulletPoints && lead.bulletPoints.length > 0) {
@@ -290,7 +343,7 @@ const generatePDF = async (req, res) => {
             doc.addPage().moveTo(36, 36);
             currentY = 36;
           }
-          doc.fontSize(9);
+          doc.fontSize(9).font('Helvetica');
           doc.text(`• ${bullet.text}`, 50, currentY, { width: doc.page.width - 150 });
           currentY = doc.y + 2;
         });
@@ -307,9 +360,10 @@ const generatePDF = async (req, res) => {
     resume.skills?.laboratory ||
     resume.interests
   ) {
-    currentY += 2;
-    addText('Skills & Interests', 36, 11, true);
-    currentY -= 2;
+    currentY += 4;
+    addText('SKILLS & INTERESTS', 36, 11, true);
+    doc.moveTo(36, currentY - 2).lineTo(doc.page.width - 36, currentY - 2).lineWidth(0.5).stroke();
+    currentY += 4;
 
     if (resume.skills?.technical) {
       doc.fontSize(9).font('Helvetica-Bold');
@@ -357,6 +411,33 @@ const generatePDF = async (req, res) => {
   }
 
   doc.end();
+
+  // After PDF generation is done, upload to Cloudinary and save to User Profile
+  writeStream.on('finish', async () => {
+    console.log(`Starting background resume upload for user: ${userId}`);
+    try {
+      const uploadedFile = await cloudinary.uploader.upload(tmpPath, {
+        folder: 'Placement-Portal/resumes',
+        resource_type: 'raw',
+        public_id: fileName,
+      });
+
+      if (uploadedFile) {
+        await UserModel.findByIdAndUpdate(userId, {
+          resume: uploadedFile.secure_url,
+        });
+        console.log(`Successfully saved resume URL to profile for user: ${userId}`);
+      }
+    } catch (error) {
+      console.error(`CRITICAL: Error saving resume to profile for user ${userId}:`, error);
+    } finally {
+      // Cleanup
+      if (fs.existsSync(tmpPath)) {
+        fs.unlinkSync(tmpPath);
+        console.log(`Cleaned up temporary resume file: ${tmpPath}`);
+      }
+    }
+  });
 };
 
 module.exports = {
