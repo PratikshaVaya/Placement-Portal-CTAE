@@ -1,11 +1,25 @@
 import { FaEdit, FaExternalLinkAlt } from 'react-icons/fa';
 import { MdDelete } from 'react-icons/md';
 import defaultAvatar from '../../assets/default-avatar.jpg';
+import { useDispatch } from 'react-redux';
+import { setModalData } from '../../features/companyAdminModal/companyAdminModal';
 
-const CompanyAdminCard = ({ admin }) => {
+const CompanyAdminCard = ({ admin, companyId, companyName }) => {
+  const dispatch = useDispatch();
   const { photo, name, email, companyRole } = admin;
   return (
-    <div className="p-5 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg hover:bg-white/[0.08] transition-all group">
+    <div className="p-5 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg hover:bg-white/[0.08] transition-all group relative">
+      <div className="absolute top-4 right-4 flex gap-2 opacity-70 hover:opacity-100 transition-opacity z-10">
+        <button
+          className="text-slate-400 hover:text-indigo-400 transition-colors p-1"
+          onClick={() => {
+            dispatch(setModalData({ companyId, companyName, admin }));
+            document.getElementById('companyAdminModal').showModal();
+          }}
+        >
+          <FaEdit size={16} />
+        </button>
+      </div>
       <div className="flex gap-5 items-center">
         <div className="relative">
           <div className="absolute inset-0 bg-indigo-500 rounded-full blur-md opacity-0 group-hover:opacity-20 transition-opacity"></div>

@@ -14,6 +14,7 @@ const {
   getCompanies,
   getSingleCompany,
   updateCompany,
+  updateCompanyAdmin,
   getAdminStats,
 } = require('../controllers/adminController');
 const {
@@ -38,6 +39,7 @@ router.post('/companies', authorizeRoles('admin'), addCompany);
 router.get('/companies', authorizeRoles('admin'), getCompanies);
 router.delete('/companies/:companyId', authorizeRoles('admin'), deleteCompany);
 router.post('/companies/:companyId/admins', authorizeRoles('admin'), addCompanyAdmin);
+router.patch('/companies/:companyId/admins/:adminId', authorizeRoles('admin'), updateCompanyAdmin);
 router.get('/companies/:companyId', authorizeRoles('admin'), getSingleCompany);
 router.patch('/companies/:companyId', authorizeRoles('admin'), updateCompany);
 

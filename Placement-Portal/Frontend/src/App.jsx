@@ -187,6 +187,7 @@ const router = createBrowserRouter([
             path: ':companyId',
             element: <SingleCompany />,
             loader: singleCompanyLoader(queryClient, store),
+            action: companyAction(queryClient, store),
           },
         ],
       },

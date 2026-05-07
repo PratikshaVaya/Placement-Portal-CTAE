@@ -2,7 +2,7 @@ import { useLoaderData } from 'react-router-dom';
 import { useState } from 'react';
 import { fetchSingleCompany } from '../../utils';
 import defaultAvatar from '../../assets/default-avatar.jpg';
-import { CompanyAdminCard } from '../../Components';
+import { CompanyAdminCard, CompanyAdminModal } from '../../Components';
 
 export const loader = (queryClient, store) => {
   return async function ({ params }) {
@@ -43,6 +43,7 @@ const SingleCompany = () => {
 
   return (
     <div className="flex flex-col gap-8 text-slate-200">
+      <CompanyAdminModal />
       {/* HEADER SECTION */}
       <div className="p-6 md:p-8 rounded-2xl bg-white/5 backdrop-blur-lg border border-white/10 shadow-lg">
         <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
@@ -211,7 +212,7 @@ const SingleCompany = () => {
         {admins?.length ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {admins.map((admin) => (
-              <CompanyAdminCard key={admin._id} admin={admin} />
+              <CompanyAdminCard key={admin._id} admin={admin} companyId={company._id} companyName={name} />
             ))}
           </div>
         ) : (

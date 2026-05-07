@@ -491,7 +491,7 @@ const addCompany = async (req, res) => {
     email,
     about,
     website,
-    accessTill: accessTill ? new Date(accessTill) : undefined,
+    accessTill: accessTill ? new Date(new Date(accessTill).setUTCHours(23, 59, 59, 999)) : null,
   });
 
   res.status(StatusCodes.CREATED).json({
@@ -521,7 +521,7 @@ const updateCompany = async (req, res) => {
       email,
       about,
       website,
-      accessTill: accessTill ? new Date(accessTill) : undefined,
+      accessTill: accessTill ? new Date(new Date(accessTill).setUTCHours(23, 59, 59, 999)) : null,
     },
     { runValidators: true }
   );
@@ -616,6 +616,42 @@ const addCompanyAdmin = async (req, res) => {
     success: true,
     message: 'Company Admin created!',
     id: companyAdmin._id,
+  });
+};
+
+const updateCompanyAdmin = async (req, res) => {
+  const adminId = req?.params?.adminId;
+  const companyId = req?.params?.companyId;
+  const {
+    companyAdminName: name,
+    companyAdminEmail: email,
+    adminRole: companyRole,
+  } = req.body;
+
+  if (!adminId?.trim() || !mongoose.Types.ObjectId.isValid(adminId))
+    throw new CustomAPIError.BadRequestError('Valid Admin Id is required!');
+
+  if (!companyRole?.trim() || !companyId?.trim() || !mongoose.Types.ObjectId.isValid(companyId))
+    throw new CustomAPIError.BadRequestError('Valid Company & Role is required!');
+
+  const updatedAdmin = await UserModel.findOneAndUpdate(
+    { _id: adminId, companyId },
+    {
+      name,
+      email: email.trim().toLowerCase(),
+      companyRole,
+    },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedAdmin) {
+    throw new CustomAPIError.NotFoundError(`No company admin found with id: ${adminId}`);
+  }
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: 'Company Admin updated!',
+    id: updatedAdmin._id,
   });
 };
 
@@ -800,6 +836,7 @@ module.exports = {
   getSingleCompany,
   addCompany,
   updateCompany,
+  updateCompanyAdmin,
   deleteCompany,
   addCompanyAdmin,
   getAdminStats,
